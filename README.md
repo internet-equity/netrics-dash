@@ -12,7 +12,7 @@ sudo apt install apache2 apache2-utils ssl-cert libapache2-mod-wsgi-py3
 
 You must also be running the docker container on the raspberry pi.
 That means following [these instructions](https://www.measurementlab.net/blog/run-your-own-ndt-server/#setup-and-run-an-ndt-server-on-ubuntu-1804-lts) from M-Lab; however, you must clone and `docker build .` the package from scratch, since it is ARM.
-Then you can launch it with `docker/launch-ndt'
+Then you can launch it with `docker/launch-ndt`
 
 Put your python functions ("microservices") in `/etc/apache2/conf-available/mod-wsgi.conf`:
 ```
