@@ -1,0 +1,179 @@
+h1 {
+  color: white;
+  text-align: center;
+  padding-top: 15px;
+  padding-bottom: 10px;
+}
+
+h2 {
+  padding: 0px;
+}
+
+
+p {
+ font-size: 20px;
+ margin: 20px 0;
+ padding-right: 75px;
+}
+
+p + p {
+ margin: 10px 0;
+}
+
+footer {
+  padding: 20px;
+}
+
+footer > p {
+  color: #888;
+  font-size: 14px;
+  margin: 5px;
+  padding: 5px 0;
+}
+
+ul.dropdown-menu>li {
+  text-align: center;
+}
+
+.headbar {
+  background-color: #444;
+  margin-bottom: 50px;
+}
+
+.dashrow {
+  padding-bottom: 35px;
+}
+
+.dashval {
+
+  display: inline-block;
+  margin: 0px 20px;
+
+  border-radius: 20px;
+  padding: 18px;
+  text-align: center;
+
+  max-width: 315px;
+}
+
+.learn_more {
+  padding: 0 25px;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.2s ease-out;
+}
+
+.learn_more > p { 
+  font-size: 18px;
+}
+
+.toggle_button {
+  cursor: pointer;
+}
+
+.extras {
+  font-size: 18px;
+  color: #666;
+  margin: 0px;
+  padding: 0px;
+}
+
+.attn {
+  background-color: #C82;
+  border: 5px solid #A40;
+}
+
+
+.good {
+  background-color: #2D6;
+  border: 5px solid #162;
+}
+
+.ok {
+  background-color: #5AE;
+  border: 5px solid #04A;
+}
+
+.bad {
+  background-color: #D33;
+  border: 5px solid #800;
+}
+
+.survey {
+
+  color: black;
+  background-color: transparent;
+  background-repeat:no-repeat;
+  border: none;
+  cursor: pointer;
+  overflow: hidden;
+  outline:none;
+
+  font-size: 30px;
+  line-height: 33px;
+  font-weight: bold;
+}
+
+.survey_after {
+  font-size: 50px;
+  font-weight: normal;
+}
+
+.btn{
+ width: 265px;
+}
+
+.dropdown-menu {
+  width: 250px;
+}
+
+.btn-primary:hover, .btn-primary:focus, .btn-primary:active, .btn-primary.active, .open>.dropdown-toggle.btn-primary {
+  color: black;
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+.dropdown-item {
+  font-size: 25px;
+  font-weight: bold;
+}
+
+.values {
+  font-size: 50px;
+  line-height: 45px;
+}
+
+.units {
+  font-size: 18px;
+  line-height: 18px;
+}
+
+.center{
+  text-align: center;
+}
+
+.loader {
+  border: 10px solid rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  border-top: 10px solid rgba(0, 0, 0, 0.5);
+  width: 40px;
+  height: 40px;
+  margin: 3px auto;
+  -webkit-animation: spin 2s linear infinite; /* Safari */
+  animation: spin 3s linear infinite;
+}
+
+/* Safari */
+@-webkit-keyframes spin {
+  0% { -webkit-transform: rotate(0deg); }
+  100% { -webkit-transform: rotate(360deg); }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.float_left {
+  float: left
+}
+

@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang='en'>
+
+<head>
+
+  <title>Home Network Monitor</title>
+
+  <link rel="icon" type="image/svg+xml" href="/img/wifi.svg">
+
+  <meta charset='utf-8' name="viewport" content="width=device-width, initial-scale=1">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6" crossorigin="anonymous">
+
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js" integrity="sha384-SR1sx49pcuLnqZUnnPwx6FCym0wLsk5JZuNx2bPPENzswTNFaQU1RDvt3wT4gWFG" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.min.js" integrity="sha384-j0CNLUeiqtyaRmlzUHCPZ+Gy5fQu0dQ6eZ/xAww941Ai1SxSY+0EQqNXNE6DZiVc" crossorigin="anonymous"></script>
+  <script type="text/javascript" src="https://code.jquery.com/jquery-1.7.1.min.js"></script>
+
+  <script src='https://cdn.plot.ly/plotly-latest.min.js'></script>
+
+  <link rel="stylesheet" href="/assets/style.css">
+
+
+</head>
+
+<body>
+
+
+  <div class="container-fluid">
+  
+    <div class=row>
+      <div class="headbar col-xs-8">
+        <h1>Home Network Monitor</h1>
+      </div>
+    </div>
+
+    <div class="row d-flex align-items-start dashrow">
+
+      	<div class="col-2"></div>
+        <div class="col-5">
+          <h2>Your experience.</h2>
+
+          <p>
+	    Below, we list a number of <em>technical</em> measures of Internet peformance.
+	    Ultimately, what matters is whether or not your connection is working for <em>you</em>.
+	    This is called "quality of experience" or "subjective experience."
+          <p>
+	    By flagging when you experience Internet connection problems&nbsp;&mdash;
+	      dropped calls or poor video, for example&nbsp;&mdash; you help us learn what connection
+	      parameters matter in practice.
+	    Note that we cannot <em>solve</em> these issues for you: we are not your ISP.
+          </p>
+	</div>
+
+        <div class="col-3 dashval attn dropdown" id="survey_box">
+          <button class="btn btn-primary btn-block dropdown-toggle survey" type="button" id="subj_button" data-bs-toggle="dropdown" aria-expanded="false">
+	    <span>How is your<br>Internet?</span>
+          </button>
+          <ul class="dropdown-menu" aria-labelledby="subj_button">
+            <li><a class="dropdown-item" href="#" onclick=send_subjective('good');>Good</a></li>
+            <li><a class="dropdown-item" href="#" onclick=send_subjective('slow');>Slow</a></li>
+            <li><a class="dropdown-item" href="#" onclick=send_subjective('unusable');>Unusable</a></li>
+          </ul>
+	  <div id="survey_thanks"></div>
+	</div>
+
+      	<div class="col-2"></div>
+
+    </div>
+
+
+    <div class="row d-flex align-items-start dashrow">
+
+      	<div class="col-2"></div>
+        <div class="col-5">
+          <h2>Bandwidth.</h2>
+
+          <p>
+          Bandwidth is the amount of data that
+	    you can send or receive from the Internet, 
+	    through your router,
+	    in "Megabits per second" (Mbps).
+	  This affects how many people in your household can
+	    can simultaneously use applications like Netflix or Zoom.
+	  Your current bandwidth of 
+	    <span id=text_ookla_dl>25</span>/<span id=text_ookla_ul>3</span>&nbsp;Mbps
+	    <span id=text_bw_interp>is similar to other </span> households in Chicago.
+	  It <span id=text_bw_fcc>exceeds</span> the "official" threshold of broadband Internet,
+	    of 25 Mbps download and 3 Mbps uploads.
+	    Your connection is <span id=text_bw_stability>stable</span> over time.
+          </p>
+
+	  <p class=extras>
+	    <span onclick="toggle(this, 'bw_more')" class=toggle_button id=bw_more_tog>+ Learn more</span> <br>
+	  </p>
+	  <div id=bw_more class=learn_more>
+	    <p>
+	    The Internet uses a variety of different methods or 
+	      "protocols" for sending information.
+	    One method, called TCP, is used for data in websites
+	      and another, UDP, is more appropriate for resource-intensive applications like 
+	      videos, where some information loss is accceptable
+	      (a missed frame is does not destroy the experience).
+	    Accordingly, there are a number of ways of testing bandwidth:
+	      some for UDP and others for TCP.
+	    There are multiple programs for measuring TCP bandwidth.
+	    Netrics runs all of these, to assess their consistency.
+	    </p>
+	  </div>
+
+	  <p class=extras>
+	    <span onclick="toggle(this, 'bw_plot')" class=toggle_button id=bw_plot_tog>+ My bandwidth over time</span>
+	  </p>
+	  <div id=bw_plot class=learn_more></div>
+
+	</div>
+
+	<div class="col-3 dashval ok">
+	  <div class=values>
+	    <span id=ookla_dl></span>
+	    <span id=bw_slash>
+              <div class="loader"></div>
+	    </span>
+            <span id=ookla_ul></span>
+	  </div>
+	  <div class=units>megabits per second</div>
+	</div>
+      	<div class="col-2"></div>
+
+    </div>
+
+
+    <div class="row d-flex align-items-start dashrow">
+
+      	<div class="col-2"></div>
+        <div class="col-5">
+          <h2>Wi-Fi bandwidth</h2>
+
+          <p>
+	    Your Wi-Fi bandwidth is how much your wireless
+	      router can send to your computer, per second.
+	    If your Wi-Fi bandwidth is less than that of your wired connection,
+	      you won't be able to use the full bandwidth that
+	      you pay for from your ISP.
+	    Your Wi-Fi bandwidth is <span id=text_wifi_interp1>greater than</span> that of the conection from your ISP:
+	      that's <span id=text_wifi_interp2>good</span>.
+          </p>
+	  <p>
+	    This test runs automatically, within your network, when you load this page.
+	  </p>
+
+	  <p class=extras>
+	    <span onclick="toggle(this, 'wifi_more')" class=toggle_button id=bw_more_tog>+ Learn more</span> <br>
+	  </p>
+	  <div id=wifi_more class=learn_more>
+	    <p>
+	      Wi-Fi is often the weakest link in a network connection.
+	      There are some simple steps you can take to improve performance:
+	      <ul>
+		<li>
+		    Move your Wi-Fi away from big chunks of metal like dishwashers or radiators.
+		    These can really block the signal!
+		</li>
+ 		<li>
+		    Similarly, just putting the router "high up"&nbsp;&mdash;
+		      on a bookshelp or cabinet&nbsp;&mdash;
+		      can put less stuff between you and your router,
+		      since most things are on the floor!
+		</li>
+	        <li>Buy your own Wi-Fi access point.
+		    Since ISPs charge around $15 a month for rentals ($180 a year),
+		      a modem / router combo pays for itself within a year.
+		    You can probably get much better performance while saving money.
+		</li>
+	      </ul>
+	    </p>
+	  </div>
+
+	</div>
+
+	<div class="col-3 dashval ok">
+	  <div class=values id=wifi_bw><div class="loader"></div></div>
+	  <div class=units>megabits per second</div>
+	</div>
+      	<div class="col-2"></div>
+
+    </div>
+
+
+
+    <div class="row d-flex align-items-start dashrow">
+
+      	<div class="col-2"></div>
+        <div class="col-5">
+          <h2>Latency.</h2>
+
+          <p>
+	    Latency is the amount of time that it takes
+	      to reach a service on the Internet, like Wikipedia or YouTube.
+	    This is measured in milliseconds &mdash;
+	      thousandths of a second.
+	    Your network latency to Google is 
+	      <span id=text_latency_interp>similar to other</span> households in Chicago.
+          </p>
+
+	  <p class=extras>
+	    <span onclick="toggle(this, 'latency_more')" class=toggle_button id=latency_more_tog>+ Learn more</span> <br>
+	  </p>
+	  <div id=latency_more class=learn_more>
+	    <p>
+	      Just as there are multiple forms of bandwidth, 
+	        there are also multiple forms of latency.
+	      Of course, we could measure the time delay to any single server (Google, Amazon, or the University of Chicago),
+	      	and the latencies depend both on the network that you connect to (your ISP)
+		and where the destination service is hosted. 
+	      For example, Wikipedia is hosted on the West Coast, while
+	      	the Chicago Tribune and the University of Chicago's website 
+		are hosted on "Content Distribution Networks" that replicate content across the country, 
+		<em>close</em> to consumers.
+	      That physical distance matters.
+	    </p>
+	    <p>
+	      At a deeper level however, there are other Internet services that actually <em>do</em> things&nbsp;&mdash;
+	        not just bounce a "ping" back and forth.
+	      For example, the system that retrieves the computer-readable address (like 172.217.4.206)
+	      	from a web URL (like google.com) has a timing delay.
+	      The system is called DNS, and we measure the DNS latency.
+	      In netrics, we also measure latency <em>under load</em>.
+	      This is just the call and response time, 
+	      	when your network link is fully used.
+	      In practice, this would be like trying to read the New York Times,
+	      	while your spouse downloaded a large file.
+	      Your connection <em>should</em> be able to handle this,
+	      	but many connections perform very poorly in these circumstances,
+		a condition called buffer bloat.
+	    </p>
+	  </div>
+
+	  <p class=extras>
+	    <span onclick="toggle(this, 'latency_plot')" class=toggle_button id=latency_plot_tog>+ My latency over time</span>
+	  </p>
+	  <div id=latency_plot class=learn_more></div>
+
+	</div>
+
+
+	<div class="col-3 dashval ok">
+	  <div class=values id=latency><div class="loader"></div></div>
+	  <div class=units>milliseconds</div>
+	</div>
+      	<div class="col-2"></div>
+
+    </div>
+
+
+    <div class="row d-flex align-items-start dashrow">
+
+      	<div class="col-2"></div>
+        <div class="col-5">
+          <h2>Peak consumption.</h2>
+
+          <p>
+	    Your netrics device can record how much data you transmit
+	      per minute and per day.
+	    These data are recorded only if you elect to turn this feature on.
+          </p>
+	  <p>
+	    At right is the single minute in the last 24 hours
+	      with the highest download bandwidth.
+	    Comparing this number with the bandwidth you buy
+	      can help you decide if you need all the bandwidth you buy&nbsp;&mdash;
+	      or if more would help.
+          </p>
+
+	  <p class=extras>
+	    <span onclick="toggle(this, 'cons_more')" class=toggle_button id=cons_more_tog>+ Learn more</span> <br>
+	  </p>
+	  <div id=cons_more class=learn_more>
+	    <p>
+	      Even for "intensive" applications like streaming movies or video conferencing,
+	      	most applications only use 1 or 2 Mbps of bandwidth;
+		you can probably find video calls as "boxes"
+		in your upstream consumption.
+	      True HD video uses somewhat more, up to 5 Mbps.
+	      However this is only in the downstream direction, 
+	      	which is usually better-provisioned.
+	      For normal browsing, demand on the connection is "peaky":
+	      	you click on a site and there's a "peak" in demand 
+		that subsides a fraction of a second later, when the site has finished loading.
+	      But almost any connection suffices for this sort of simple browsing.
+	      The very-highest levels of bandwidth use come from downloading multi-gigabyte files,
+	      	but this is rare for most people.
+	      Using the plot below, you can assess how often you really "saturate" your connection.
+	    </p>
+
+	  </div>
+
+	  <p class=extras>
+	    <span onclick="toggle(this, 'cons_plot')" class=toggle_button id=cons_plot_tog>+ My consumption over time</span>
+	  </p>
+	  <div id=cons_plot class=learn_more></div>
+
+	</div>
+
+	<div class="col-3 dashval ok">
+	  <div class=values id=consumption><div class="loader"></div></div>
+	  <div class=units>megabits per second</div>
+	</div>
+      	<div class="col-2"></div>
+
+    </div>
+
+
+    <div class="row d-flex align-items-start dashrow">
+
+      	<div class="col-2"></div>
+        <div class="col-5">
+          <h2>Connected devices.</h2>
+
+	  <p>
+	    Many modern electronic devices connect to your Wi-Fi.
+	    Netrics records the number of unique devices that 
+	      connect to your router over time.
+          </p>
+
+	  <p class=extras>
+	    <span onclick="toggle(this, 'dev_more')" class=toggle_button id=dev_more_tog>+ Learn more</span> <br>
+	  </p>
+	  <div id=dev_more class=learn_more>
+	    <p>
+	      Every internet connected devices has a unique identifier, called a MAC address
+	      	for each interface (wifi, ethernet) over which it can connect to a network.
+	      Netrics queries the router for a list of connected devices, every five minutes.
+	    </p>
+	  </div>
+
+	  <p class=extras>
+	    <span onclick="toggle(this, 'dev_plot')" class=toggle_button id=dev_plot_tog>+ My devices over time</span>
+	  </p>
+	  <div id=dev_plot class=learn_more></div>
+
+	</div>
+
+	<div class="col-3 dashval ok">
+	  <div class=values id=ndev_week><div class="loader"></div></div>
+	  <div class=units>devices in the last week</div>
+	</div>
+      	<div class="col-2"></div>
+
+    </div>
+
+
+  </div>
+
+
+  <footer>
+    <p class=center>
+      Internet Equity Initiative<br>
+      Center for Data and Computing<br>
+      University of Chicago
+    </p>
+    <p class=center>
+      <img src=/img/cdac.svg width=2%>
+    </p>
+  </footer>
+  
+</body>
+
+  <script src="data_mgmt.js"></script>
+
+  <script type='text/javascript' src='ndt7-core.js'></script>
+  <script type='text/javascript' src="ndt7-run-dash.js"></script> 
+
+</html>
