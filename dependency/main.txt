@@ -1,0 +1,8 @@
+docker.io
+
+python3-pip
+
+# FIXME: should be able to ship microservice without apache
+apache2
+apache2-utils
+libapache2-mod-wsgi-py3

@@ -2,7 +2,7 @@ import json, time, sqlite3
 from urllib.parse import parse_qs
 
 
-def get_and_save_post_data(env, sqlite_fname = "/var/www/scripts/wsgi.sqlite"):
+def get_and_save_post_data(env, sqlite_fname="/var/www/data/dashboard/data.sqlite"):
 
     con = sqlite3.connect(sqlite_fname)
     # con.execute("CREATE TABLE IF NOT EXISTS wsgi (ts INT, subj INT);")
