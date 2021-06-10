@@ -139,9 +139,30 @@ install_lib() {
 
 # no great way to check that python libs installed;
 # rather, always fail check and let pip figure it out
-require lib \
+require cli \
   icli::always_install \
   install_lib
+
+# docker buildx
+
+BUILDX_VERSION=0.5.1
+BUILDX_SRC="https://github.com/docker/buildx/releases/download/v${BUILDX_VERSION}/buildx-v${BUILDX_VERSION}.linux-amd64"
+
+BUILDX_DEST="$HOME/.docker/cli-plugins/docker-buildx"
+
+buildx_inplace() {
+  test -f "$BUILDX_DEST"
+}
+
+install_buildx() {
+  mkdir -p "$(dirname "$BUILDX_DEST")"
+  curl -#Lo "$BUILDX_DEST" "$BUILDX_SRC"
+  chmod ug+x "$BUILDX_DEST"
+}
+
+require buildx \
+  buildx_inplace \
+  install_buildx
 
 # # environment variables
 #

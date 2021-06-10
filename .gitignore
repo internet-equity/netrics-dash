@@ -1,2 +1,7 @@
+__pycache__/
+
+.env
 .python-version
 .install.*.bash.inc
+
+.ndt-server/
