@@ -199,6 +199,8 @@ class Management(Local):
             print(f'tip: scp {NETRICS_HOST}:/etc/nm-exp-active-netrics/.env .')
 
         if args.serve_dev:
+            yield self.local['mkdir']['-p', REPO_PATH / '.var']
+
             run_command = run_command[
                 '--env', 'APP_RELOAD=1',
                 '--volume', str(REPO_PATH / 'src') + ':/usr/src/dashboard',
@@ -257,8 +259,8 @@ class Management(Local):
 
                   popd
 
-                  sudo docker stop ndt7 2>/dev/null
-                  sudo docker rm ndt7 2>/dev/null
+                  sudo docker stop ndt7 &>/dev/null
+                  sudo docker rm ndt7 &>/dev/null
 
                   sudo docker run                                           \
                     --detach                                                \
