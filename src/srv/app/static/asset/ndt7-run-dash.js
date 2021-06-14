@@ -2,7 +2,6 @@
 /* globals ndt7core */
 
 function update_values(info, tag) {
-
   const elapsed = info.ElapsedTime / 1e06     /* second */
   let speed = info.NumBytes / elapsed         /* B/s    */
   speed *= 8                                     /* bit/s  */
@@ -41,13 +40,16 @@ function update_values(info, tag) {
 }
 
 function run_ndt(testName, callback) {
-  ndt7core.run("https://192.168.1.5:4443/ndt7.html", testName, function(ev, val) {
+  /*
+   * HTTPS would be nice -- but disabling for now as user must manually accept certificate!
+   */
+  ndt7core.run("http://netrics.local:8888/ndt7.html", testName, function(ev, val) {
     // console.log(ev, val)
     if (ev === 'complete') {
       if (callback !== undefined) {
         callback()
       }
-      console.log("ALL COMPLETE")
+      console.log("LAN bandwidth test complete")
       return
     }
     if (ev === 'measurement' && val.AppInfo !== undefined &&
@@ -70,5 +72,3 @@ function run_both() {
 }
 
 run_download()
-
-

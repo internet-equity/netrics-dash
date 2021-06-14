@@ -7,7 +7,15 @@ const ndt7core = (function() {
     run: function(baseURL, testName, callback) {
       callback('starting', {Origin: 'client', Test: testName})
       let done = false
-      let worker = new Worker('ndt7-' + testName + '.js')
+
+      /*
+       * BEGIN netrics-dash mod: added base path
+       */
+      let worker = new Worker('/dashboard/asset/ndt/ndt7-' + testName + '.js')
+      /*
+       * END netrics-dash mod
+       */
+
       function finish() {
         if (!done) {
           done = true

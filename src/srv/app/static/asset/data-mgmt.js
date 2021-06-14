@@ -1,23 +1,18 @@
-function set_color_class(el, val) {
-
+function set_color_class (el, val) {
   el.classList.remove("bad")
   el.classList.remove("ok")
   el.classList.remove("good")
   el.classList.remove("attn")
   el.classList.add(val)
-
 }
 
-function update_view(data) {
 
+function update_view (data) {
   for (const [key, value] of Object.entries(data)) {
-
     elem = document.getElementById(key)
-
     if (!elem) continue;
     elem.innerHTML = value;
   }
-
 
   // Oookla data setings.
 
@@ -49,7 +44,6 @@ function update_view(data) {
     text_bw_stability.innerHTML = "not stable"
   else text_bw_stability.innerHTML = "stable"
 
-
   // Latency
   elem = document.getElementById("latency")
   pardiv = elem.parentElement.parentElement
@@ -62,31 +56,28 @@ function update_view(data) {
   if (data["latency"] > 40) text_latency_interp.innerHTML = "worse than most";
   else if (data["latency"] < 10) text_latency_interp.innerHTML = "lower than most";
   else text_latency_interp.innerHTML = "similar to other";
-
-
 }
 
-function async_load_data() {
 
+function async_load_data () {
   $.ajax({
-    url: "current_stats",
+    url: 'stats',
     dataType: 'json',
     success: update_view
   });
-
 }
 
 
-function send_subjective(value) {
-
+function send_subjective (value) {
   display_map = {"unusable" : "Unusable", "slow" : "Slow", "good" : "Good"}
   color_map   = {"unusable" : "bad", "slow" : "attn", "good" : "good"}
 
-  $.post("submit_subjective",
-    { subjective: value }, 
-    function(data, status) {
-
-      console.log("Successfuly inserted " + value);
+  $.post('/dashboard/survey/',
+    {
+      subjective: value
+    }, 
+    function () {
+      console.log("survey: success:", value);
 
       const elem = document.getElementById("subj_button")
       if (!elem) return
@@ -98,14 +89,12 @@ function send_subjective(value) {
 
       const thanks_div = document.getElementById("survey_thanks")
       thanks_div.innerHTML = "Thanks for participating!"
-      
     }
   );
-
 }
 
-function toggle(a, target) {
 
+function toggle (a, target) {
   expand = (a.innerHTML[0] == "+")
   txt = a.innerHTML
   txt = txt.substr(1, txt.length)
@@ -122,13 +111,10 @@ function toggle(a, target) {
     more.style.maxHeight = null;
 
   }
-
-
 }
 
 
 function make_plots(data) {
-
   var config = {"displayModeBar" : false}
 
   var layout = {
@@ -173,7 +159,6 @@ function make_plots(data) {
                           range : [0, 75]};
 
   Plotly.newPlot('latency_plot', lat_series, lat_layout, config);
-  
 
   // CONSUMPTION
 
@@ -191,7 +176,10 @@ function make_plots(data) {
 
   Plotly.newPlot('cons_plot', con_series, con_layout, config);
 
-	
+  if (data['consumption']['ts'].length > 0) {
+    // consumption stat requires hardware we're not currently rolling out
+    $('#cons_plot').parents('.row').first().collapse('show');
+  }
 
   // DEVICES
 	
@@ -210,22 +198,17 @@ function make_plots(data) {
   dev_layout["yaxis"] = { title : { text: '# of Devices'}};
 
   Plotly.newPlot('dev_plot', dev_series, dev_layout, config);
-  
-
 }
 
-function async_load_plots() {
 
+function async_load_plots() {
   $.ajax({
     url: "plots",
     dataType: 'json',
     success: make_plots
   });
-
 }
 
 
 async_load_data();
 async_load_plots();
-
-

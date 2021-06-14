@@ -5,3 +5,5 @@ __pycache__/
 .install.*.bash.inc
 
 .ndt-server/
+
+.var/data.sqlite

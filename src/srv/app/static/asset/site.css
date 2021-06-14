@@ -177,3 +177,7 @@ ul.dropdown-menu>li {
   float: left
 }
 
+/* fix bootstrap missing !important */
+.collapse:not(.show) {
+  display: none !important;
+}
