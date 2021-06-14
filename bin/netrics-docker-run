@@ -27,8 +27,8 @@ ssh ubuntu@netrics.local """
 
       popd
 
-      sudo docker stop ndt7 2>/dev/null
-      sudo docker rm ndt7 2>/dev/null
+      sudo docker stop ndt7 &>/dev/null
+      sudo docker rm ndt7 &>/dev/null
 
       sudo docker run                                           \
 	--detach                                                \
