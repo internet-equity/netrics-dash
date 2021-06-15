@@ -5,7 +5,7 @@
 
   <title>Home Network Monitor</title>
 
-  <link rel="icon" type="image/svg+xml" href="/img/wifi.svg">
+  <link rel="icon" type="image/svg+xml" href="/dashboard/asset/img/wifi.svg">
 
   <meta charset='utf-8' name="viewport" content="width=device-width, initial-scale=1">
 
@@ -17,13 +17,11 @@
 
   <script src='https://cdn.plot.ly/plotly-latest.min.js'></script>
 
-  <link rel="stylesheet" href="/assets/style.css">
-
+  <link rel="stylesheet" href="/dashboard/asset/site.css">
 
 </head>
 
 <body>
-
 
   <div class="container-fluid">
   
@@ -34,7 +32,6 @@
     </div>
 
     <div class="row d-flex align-items-start dashrow">
-
       	<div class="col-2"></div>
         <div class="col-5">
           <h2>Your experience.</h2>
@@ -185,8 +182,6 @@
 
     </div>
 
-
-
     <div class="row d-flex align-items-start dashrow">
 
       	<div class="col-2"></div>
@@ -251,8 +246,8 @@
 
     </div>
 
-
-    <div class="row d-flex align-items-start dashrow">
+    <!-- consumption stat requires hardware we're not currently rolling out: collapse -->
+    <div class="row d-flex align-items-start dashrow collapse">
 
       	<div class="col-2"></div>
         <div class="col-5">
@@ -309,7 +304,6 @@
 
     </div>
 
-
     <div class="row d-flex align-items-start dashrow">
 
       	<div class="col-2"></div>
@@ -348,9 +342,7 @@
 
     </div>
 
-
   </div>
-
 
   <footer>
     <p class=center>
@@ -359,15 +351,16 @@
       University of Chicago
     </p>
     <p class=center>
-      <img src=/img/cdac.svg width=2%>
+      <img src="/dashboard/asset/img/cdac.svg" width=2%>
     </p>
   </footer>
   
+  <script type="text/javascript" src="/dashboard/asset/data-mgmt.js"></script>
+
+  <script type="text/javascript" src="/dashboard/asset/ndt/ndt7-core.js"></script>
+
+  <script type="text/javascript" src="/dashboard/asset/ndt7-run-dash.js"></script> 
+
 </body>
-
-  <script src="data_mgmt.js"></script>
-
-  <script type='text/javascript' src='ndt7-core.js'></script>
-  <script type='text/javascript' src="ndt7-run-dash.js"></script> 
 
 </html>

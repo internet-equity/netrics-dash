@@ -1,0 +1,87 @@
+#!/bin/sh
+ssh ubuntu@netrics.local """
+    sudo apt-get install -y docker.io
+    sudo modprobe tcp_bbr
+
+    if [ ! -f /usr/local/bin/ndt-generate-local-test-certs ]; then
+      sudo curl \
+	-o /usr/local/bin/ndt-generate-local-test-certs \
+	https://raw.githubusercontent.com/m-lab/ndt-server/v0.20.6/gen_local_test_certs.bash
+
+      sudo chmod 775 /usr/local/bin/ndt-generate-local-test-certs
+    fi
+
+    if [ ! -f /usr/local/lib/ndt-server/certs/cert.pem ]; then
+      sudo mkdir -p /usr/local/lib/ndt-server
+      pushd /usr/local/lib/ndt-server
+
+      sudo install -d certs datadir
+
+      sudo /usr/local/bin/ndt-generate-local-test-certs
+
+      sudo chown root:$(id -g) certs/key.pem
+      sudo chmod g+r certs/key.pem
+
+      sudo chown root:$(id -g) datadir
+      sudo chmod g+w datadir
+
+      popd
+
+      sudo docker stop ndt7 &>/dev/null
+      sudo docker rm ndt7 &>/dev/null
+
+      sudo docker run                                           \
+	--detach                                                \
+	--restart=always                                        \
+	--network=bridge                                        \
+	--publish 4444:4444                                     \
+	--publish 8888:8888                                     \
+	--volume /usr/local/lib/ndt-server/certs:/certs:ro      \
+	--volume /usr/local/lib/ndt-server/datadir:/datadir     \
+	--read-only                                             \
+	--user $(id -u):$(id -g)                                \
+	--cap-drop=all                                          \
+	--name ndt7                                             \
+	chicagocdac/ndt-server                            \
+	-cert /certs/cert.pem                                   \
+	-key /certs/key.pem                                     \
+	-datadir /datadir                                       \
+	-ndt7_addr :4444                                        \
+	-ndt5_addr :3001                                        \
+	-ndt5_wss_addr :3010                                    \
+	-ndt7_addr_cleartext :8888
+    fi
+
+    if [ ! -e /var/lib/netrics-dashboard ]; then
+      sudo mkdir -p /var/lib/netrics-dashboard
+      sudo chown root:$(id -g) /var/lib/netrics-dashboard
+      sudo chmod g+w /var/lib/netrics-dashboard
+    fi
+
+    sudo mkdir -p /var/run/netrics-dashboard
+
+    if [ ! -f /var/run/netrics-dashboard/version ]; then
+      sudo docker stop netrics-dashboard &>/dev/null
+      sudo docker rm netrics-dashboard &>/dev/null
+
+      sudo docker run                                             \
+	--detach                                                  \
+	--restart=always                                          \
+	--network=bridge                                          \
+	--publish 80:8080                                         \
+	--env-file /etc/nm-exp-active-netrics/.env                \
+	--volume /var/lib/netrics-dashboard:/var/lib/dashboard    \
+	--read-only                                               \
+	--user $(id -u):$(id -g)                                  \
+	--name netrics-dashboard                                  \
+	chicagocdac/netrics-dashboard
+
+      sudo docker inspect                                         \
+	--format="{{.Config.Labels.appversion}}"              \
+	netrics-dashboard                                         \
+	| sudo tee /var/run/netrics-dashboard/version             \
+	| xargs echo netrics-dashboard:
+    fi
+"""
+            
+echo Success! Visit http://netrics.local/ to view your local dashboard.
