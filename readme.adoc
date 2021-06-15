@@ -1,0 +1,117 @@
+= Netrics Local Dashboard
+
+Local (LAN) dashboard server(s) for extended reporting, measurement and control of Netrics experimentation.
+
+This repository provides the source code behind the Netrics local dashboard.
+Basic orchestration for the local dashboard is also provided, via Docker,
+as well as for its required https://github.com/m-lab/ndt-server[ndt-server].
+
+Docker images are stored in Docker Hub:
+https://hub.docker.com/r/chicagocdac/netrics-dashboard[netrics-dashboard] and
+https://hub.docker.com/r/chicagocdac/ndt-server[ndt-server].
+
+
+== Installation
+
+To manually provision a network-connected Netrics device, a bootstrapping script
+is maintained under link:./bin/netrics-docker-run[bin/netrics-docker-run].
+
+This script is intended for execution from another network-connected device
+(_e.g._ your laptop), and assumes that the Netrics device is accessible at `netrics.local`.
+
+To execute the script and provision your Netrics device without cloning this repository:
+
+```sh
+curl -s https://raw.githubusercontent.com/chicago-cdac/netrics-dash/main/bin/netrics-docker-run | sh
+```
+
+Or, from a repository clone:
+
+```sh
+./bin/netrics-docker-run
+```
+
+The local dashboard is then accessible at http://netrics.local/.
+
+
+== Development
+
+=== Background
+
+As the target artifact of development is the Docker image, the Docker CLI is the
+development environment's core requirement.
+
+All development and orchestration tasks are defined (akin to the `Makefile`)
+by the `manage.py` Python module, which is executed by the `manage` command
+(see https://github.com/dssg/argcmdr[argcmdr]).
+
+Development environment requirements beyond the above are therefore slim-to-none.
+Nonetheless, a Python virtual environment is recommended, (if relatively unnecessary):
+
+* https://github.com/pyenv/pyenv[pyenv] (and its extensions) remain among the
+most powerful development tools by which to ensure Python versioning and library
+requirements are met.
+* Alternatively, self-management will always do the trick, _e.g._:
++
+[source,sh]
+----
+python3 -m venv .venv
+. .venv/bin/activate
+----
+
+=== Set-up
+
+The development and orchestration environment may be configured and verified
+via the guided set-up script link:./develop[develop]:
+
+[source,sh]
+----
+$ ./develop 
+(install) begin 
+
+(python-3.7.0) check passed ✓ 
+
+(cli) install? 
+1) yes, install { pip install -r requirement/develop.txt }
+2) no, ignore
+#? 
+----
+
+=== Develop → Build → Deploy
+
+All development and orchestration tasks may be managed via the `manage` command.
+
+Get started serving the local dashboard from the cloned repository's source:
+
+[source,sh]
+----
+manage serve
+----
+
+Explore management tasks via the `--help` flag, _e.g._:
+
+[source,sh]
+----
+manage --help
+----
+
+and:
+
+[source,sh]
+----
+manage serve --help
+----
+
+Preview tasks' operations via `--dry-run` (or `-d`):
+
+[source,sh]
+----
+manage --dry-run serve
+----
+
+And view these as they're executed via `--show` (or `-s`):
+
+[source,sh]
+----
+manage --show serve
+----
