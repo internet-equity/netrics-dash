@@ -143,6 +143,16 @@ require cli \
   icli::always_install \
   install_lib
 
+# docker
+
+exists_docker() {
+  icli::check_command docker
+}
+
+require docker \
+  exists_docker \
+  --fail-prefix="docker command not found"
+
 # docker buildx
 
 BUILDX_VERSION=0.5.1
