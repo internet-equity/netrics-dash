@@ -1,8 +1,11 @@
+import grp
+import os
 import pathlib
 import re
 
 from argcmdr import Local, localmethod
 from plumbum import colors
+from plumbum.cmd import sudo
 from plumbum.commands import ExecutionModifier
 
 
@@ -52,7 +55,7 @@ DEPENDENCIES = ' '.join(stream_requirements(REPO_PATH / 'dependency' / 'main.txt
 
 
 def version_type(value):
-    if not re.fullmatch(r'\d\.\d\.\d', value):
+    if not re.match(r'\d\.\d\.\d', value):
         raise ValueError('invalid version number')
 
     return value
@@ -69,6 +72,11 @@ class Management(Local):
             help="Docker organization repository or generic image repository URI with which to "
                  "tag and to which to push built images (default: %(default)s)",
         )
+
+        if any(grp.getgrgid(group).gr_name == 'docker' for group in os.getgroups()):
+            self.docker = self.local['docker']
+        else:
+            self.docker = sudo['-E', 'docker']
 
     @localmethod('target', choices=('dash', 'ndt'), nargs='?',
                  help="build target (default: all)")
@@ -100,7 +108,7 @@ class Management(Local):
         action = '--push' if args.push else '--load'
 
         if not BINFMT_TARGET.exists():
-            yield self.local.FG, self.local['docker'][
+            yield self.local.FG, self.docker[
                 'run',
                 '--rm',
                 '--privileged',
@@ -108,19 +116,19 @@ class Management(Local):
             ]
 
         try:
-            yield self.local.FG, self.local['docker'][
+            yield self.local.FG, self.docker[
                 'buildx',
                 'ls',
             ] | self.local['grep'][args.builder]
         except self.local.ProcessExecutionError:
-            yield self.local.FG, self.local['docker'][
+            yield self.local.FG, self.docker[
                 'buildx',
                 'create',
                 '--name', args.builder,
                 '--platform', 'linux/amd64,linux/arm64',
             ]
 
-        yield self.local.FG, self.local['docker'][
+        yield self.local.FG, self.docker[
             'buildx',
             'use',
             args.builder,
@@ -144,7 +152,7 @@ class Management(Local):
             ]
             ndt_tag = 'DRY.RUN' if stdout is None else stdout.strip()
 
-            yield self.local.FG, self.local['docker'][
+            yield self.local.FG, self.docker[
                 'buildx',
                 'build',
                 '--platform', platforms,
@@ -155,7 +163,7 @@ class Management(Local):
             ]
 
         if 'dash' in targets:
-            yield self.local.FG, self.local['docker'][
+            yield self.local.FG, self.docker[
                 'buildx',
                 'build',
                 '--platform', platforms,
@@ -178,14 +186,14 @@ class Management(Local):
         """serve dashboard locally"""
         for cleanup_command in ('stop', 'rm'):
             try:
-                yield SHH, self.local['docker'][
+                yield SHH, self.docker[
                     cleanup_command,
                     args.name,
                 ]
             except self.local.ProcessExecutionError:
                 pass
 
-        run_command = self.local['docker'][
+        run_command = self.docker[
             'run',
             '-d',
             '-p', '8080:8080',
