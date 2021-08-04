@@ -63,7 +63,7 @@ ul.dropdown-menu>li {
   transition: max-height 0.2s ease-out;
 }
 
-.learn_more > p { 
+.learn_more > p {
   font-size: 18px;
 }
 
@@ -180,4 +180,33 @@ ul.dropdown-menu>li {
 /* fix bootstrap missing !important */
 .collapse:not(.show) {
   display: none !important;
+}
+
+.loading:after, .loading-done:after {
+  overflow: hidden;
+  display: inline-block;
+  vertical-align: bottom;
+  content: "\2026"; /* ascii code for the ellipsis character */
+}
+
+.loading:after {
+  -webkit-animation: ellipsis steps(4,end) 900ms infinite;
+  animation: ellipsis steps(4,end) 900ms infinite;
+  width: 0px;
+}
+
+@keyframes ellipsis {
+  to {
+    width: 1.5em;
+  }
+}
+
+@-webkit-keyframes ellipsis {
+  to {
+    width: 1.5em;
+  }
+}
+
+.wifi-stats {
+  display: none;
 }

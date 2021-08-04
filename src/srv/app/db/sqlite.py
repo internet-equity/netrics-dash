@@ -6,15 +6,21 @@ import app
 
 SQLITE_DEFAULT = app.APP_PATH / 'data.sqlite'
 
-TABLE_STMT_SURVEY = """\
-create table if not exists survey (
-    ts integer primary key default (strftime('%s', 'now')),
-    subj integer
-) without rowid;
-"""
 # NOTE: rowid ommitted to prevent sqlite from substituting a sequential rowid
 # NOTE: for the correct timestamp default;
 # NOTE: (however, there might be better solutions).
+PREPARE_DATABASE = """\
+create table if not exists survey (
+    ts integer primary key default (strftime('%s', 'now')),
+    subj integer not null
+) without rowid;
+
+create table if not exists trial (
+    ts integer primary key default (strftime('%s', 'now')),
+    size integer,
+    period integer
+) without rowid;
+"""
 
 
 class Client(threading.local):
@@ -36,7 +42,7 @@ class Client(threading.local):
 
     def prepare_database(self):
         with self.connect() as conn:
-            conn.execute(TABLE_STMT_SURVEY)
+            conn.executescript(PREPARE_DATABASE)
 
 
 client = Client()

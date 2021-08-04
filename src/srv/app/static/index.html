@@ -13,7 +13,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js" integrity="sha384-SR1sx49pcuLnqZUnnPwx6FCym0wLsk5JZuNx2bPPENzswTNFaQU1RDvt3wT4gWFG" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.min.js" integrity="sha384-j0CNLUeiqtyaRmlzUHCPZ+Gy5fQu0dQ6eZ/xAww941Ai1SxSY+0EQqNXNE6DZiVc" crossorigin="anonymous"></script>
-  <script type="text/javascript" src="https://code.jquery.com/jquery-1.7.1.min.js"></script>
+  <script type="text/javascript" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
   <script src='https://cdn.plot.ly/plotly-latest.min.js'></script>
 
@@ -53,9 +53,9 @@
 	    <span>How is your<br>Internet?</span>
           </button>
           <ul class="dropdown-menu" aria-labelledby="subj_button">
-            <li><a class="dropdown-item" href="#" onclick=send_subjective('good');>Good</a></li>
-            <li><a class="dropdown-item" href="#" onclick=send_subjective('slow');>Slow</a></li>
-            <li><a class="dropdown-item" href="#" onclick=send_subjective('unusable');>Unusable</a></li>
+            <li><a class="dropdown-item" href="#" onclick="subjective.send('good')">Good</a></li>
+            <li><a class="dropdown-item" href="#" onclick="subjective.send('slow')">Slow</a></li>
+            <li><a class="dropdown-item" href="#" onclick="subjective.send('unusable')">Unusable</a></li>
           </ul>
 	  <div id="survey_thanks"></div>
 	</div>
@@ -78,6 +78,8 @@
 	    in "Megabits per second" (Mbps).
 	  This affects how many people in your household can
 	    can simultaneously use applications like Netflix or Zoom.
+        </p>
+        <p>
 	  Your current bandwidth of 
 	    <span id=text_ookla_dl>25</span>/<span id=text_ookla_ul>3</span>&nbsp;Mbps
 	    <span id=text_bw_interp>is similar to other </span> households in Chicago.
@@ -138,12 +140,21 @@
 	    If your Wi-Fi bandwidth is less than that of your wired connection,
 	      you won't be able to use the full bandwidth that
 	      you pay for from your ISP.
-	    Your Wi-Fi bandwidth is <span id=text_wifi_interp1>greater than</span> that of the conection from your ISP:
-	      that's <span id=text_wifi_interp2>good</span>.
           </p>
-	  <p>
-	    This test runs automatically, within your network, when you load this page.
+
+          <p id="wifi-info" class="wifi-stats">
+          </p>
+
+	  <p class="loading">
+        A test of your Wi-Fi <span class="wifi-stats">also</span> runs automatically, within your network, when you load this page
 	  </p>
+	  <p class="d-none">
+	    &hellip; Your Wi-Fi bandwidth was <span id=text_wifi_interp1>greater than</span> that of the conection from your ISP:
+	      that's <span id=text_wifi_interp2>good</span>.
+	  </p>
+      <p id="wifi-failure" class="d-none">
+        <strong>Whoops.</strong> Something went wrong. Try again in a few moments.
+      </p>
 
 	  <p class=extras>
 	    <span onclick="toggle(this, 'wifi_more')" class=toggle_button id=bw_more_tog>+ Learn more</span> <br>
@@ -193,6 +204,8 @@
 	      to reach a service on the Internet, like Wikipedia or YouTube.
 	    This is measured in milliseconds &mdash;
 	      thousandths of a second.
+          </p>
+          <p>
 	    Your network latency to Google is 
 	      <span id=text_latency_interp>similar to other</span> households in Chicago.
           </p>

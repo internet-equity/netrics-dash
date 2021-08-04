@@ -1,4 +1,5 @@
-FROM python:3.9-alpine
+FROM python:3.9-alpine3.14
+# Starting with 3.14 features sqlite3.35 and "returning" clause
 
 # Builds intended for deployment should specify the software
 # version via "APPVERSION".
