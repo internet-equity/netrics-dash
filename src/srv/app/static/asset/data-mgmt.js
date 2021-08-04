@@ -37,7 +37,7 @@ function update_view (data) {
 
   if (data["ookla_dl"] > 25 && data["ookla_ul"] > 3)
     text_bw_fcc.innerHTML = "exceeds";
-  else 
+  else
     text_bw_fcc.innerHTML = "does not meet";
 
   if (data["ookla_dl_sd"] > 0.15 * data["ookla_dl"])
@@ -60,38 +60,44 @@ function update_view (data) {
 
 
 function async_load_data () {
-  $.ajax({
-    url: 'stats',
-    dataType: 'json',
-    success: update_view
-  });
+  return $.getJSON('stats', update_view);
 }
 
 
-function send_subjective (value) {
-  display_map = {"unusable" : "Unusable", "slow" : "Slow", "good" : "Good"}
-  color_map   = {"unusable" : "bad", "slow" : "attn", "good" : "good"}
+const subjective = {
+    labels: {
+        display: {
+          unusable: "Unusable",
+          slow: "Slow",
+          good: "Good"
+        },
+        color: {
+          unusable: "bad",
+          slow: "attn",
+          good: "good"
+        }
+    },
+    handleSuccess: function (data) {
+        const value = data.inserted.value,
+              elem = document.getElementById("subj_button"),
+              parEl = elem.parentElement,
+              thanks_div = document.getElementById("survey_thanks");
 
-  $.post('/dashboard/survey/',
-    {
-      subjective: value
-    }, 
-    function () {
-      console.log("survey: success:", value);
+        console.debug("survey: success:", value);
 
-      const elem = document.getElementById("subj_button")
-      if (!elem) return
-      elem.innerHTML = display_map[value]
-      elem.classList.add("survey_after")
+        if (!elem) return;
 
-      parEl = elem.parentElement
-      set_color_class(parEl, color_map[value])
+        elem.innerHTML = this.labels.display[value]
+        elem.classList.add("survey_after")
 
-      const thanks_div = document.getElementById("survey_thanks")
-      thanks_div.innerHTML = "Thanks for participating!"
+        set_color_class(parEl, this.labels.color[value])
+
+        thanks_div.innerHTML = "Thanks for participating!"
+    },
+    send: function (value) {
+        return $.post('/dashboard/survey/', {subjective: value}, this.handleSuccess.bind(this));
     }
-  );
-}
+};
 
 
 function toggle (a, target) {
@@ -202,13 +208,36 @@ function make_plots(data) {
 
 
 function async_load_plots() {
-  $.ajax({
-    url: "plots",
-    dataType: 'json',
-    success: make_plots
-  });
+  return $.getJSON('plots', make_plots);
 }
 
 
-async_load_data();
+function update_trial_stats (wifi_trial, isp_dl) {
+  if (Number.isInteger(wifi_trial.total_count) && wifi_trial.total_count > 2) {
+    const mbaud = (wifi_trial.stat_mean * 8 / 1e06).toFixed(1),
+          [op, desc, label] = compare_speeds(mbaud, isp_dl),
+          info = document.getElementById('wifi-info');
+
+    info.innerHTML = `Your Web browser(s) have conducted ${wifi_trial.total_count} download tests of your Wi-Fi. `;
+    info.innerHTML += (wifi_trial.total_count === wifi_trial.stat_count) ? 'Over these, ' : `In the bulk of these — ${wifi_trial.stat_count} tests — `;
+    info.innerHTML += `your Wi-Fi bandwidth averaged ${mbaud} megabits per second. So, your Wi-Fi bandwidth is usually ${op} that of the connection from your ISP: that's ${desc}.`;
+
+    document.querySelectorAll('.wifi-stats').forEach(elem => {
+        elem.style.display = 'initial';
+    });
+  }
+}
+
+function async_load_trials () {
+  return $.getJSON('trial/stats');
+}
+
+Promise.all([
+  async_load_data(),
+  async_load_trials()
+]).then(values => {
+  const [isp_stats, wifi_trial] = values;
+  update_trial_stats(wifi_trial, isp_stats.ookla_dl);
+});
+
 async_load_plots();
