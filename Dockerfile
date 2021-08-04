@@ -7,7 +7,7 @@ ARG APPVERSION
 ARG APPNAME=dashboard
 
 # Label "version" may be incremented upon changing this file.
-LABEL version="1" \
+LABEL version="2" \
       appname="$APPNAME" \
       appversion="$APPVERSION"
 
