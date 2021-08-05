@@ -2,8 +2,9 @@ import grp
 import os
 import pathlib
 import re
+import textwrap
 
-from argcmdr import Local, localmethod
+from argcmdr import cmdmethod, Local, localmethod
 from plumbum import colors
 from plumbum.cmd import sudo
 from plumbum.commands import ExecutionModifier
@@ -224,17 +225,33 @@ class Management(Local):
                   'view local dashboard at',
                   'http://localhost:8080/' | colors.underline)
 
-    @localmethod('--username', default=NETRICS_USER, metavar='NAME',
-                 help="netrics host username (default: %(default)s)")
-    @localmethod('--host', default=NETRICS_HOST, metavar='NETLOC',
-                 help="netrics local hostname or network locator (default: %(default)s)")
-    def provision(self, args):
-        """set up a local raspberry pi"""
-        yield self.local.FG, self.local['ssh'][f'{args.username}@{args.host}'][
+    class Provision(Local):
+        """set up a (local) raspberry pi"""
+
+        def __init__(self, parser):
+            parser.add_argument(
+                '--version',
+                default='latest',
+                help="version of dashboard image to provision (default: %(default)s)",
+            )
+            parser.add_argument(
+                '--username',
+                default=NETRICS_USER,
+                metavar='NAME',
+                help="netrics host username (default: %(default)s)",
+            )
+            parser.add_argument(
+                '--host',
+                default=NETRICS_HOST,
+                metavar='NETLOC',
+                help="netrics local hostname or network locator (default: %(default)s)",
+            )
+
+        def _prepare_commands(self):
             #
             # ensure dependencies on rpi
             #
-            f'''
+            yield f'''
                 sudo apt-get install -y {DEPENDENCIES}
                 sudo modprobe tcp_bbr
             '''
@@ -242,7 +259,7 @@ class Management(Local):
             #
             # set up ndt-server
             #
-            rf'''
+            yield rf'''
                 if [ ! -f /usr/local/bin/ndt-generate-local-test-certs ]; then
                   sudo curl \
                     -o /usr/local/bin/ndt-generate-local-test-certs \
@@ -282,7 +299,7 @@ class Management(Local):
                     --user $(id -u):$(id -g)                                \
                     --cap-drop=all                                          \
                     --name ndt7                                             \
-                    {args.image_repo}/ndt-server                            \
+                    {self.args.image_repo}/ndt-server                       \
                     -cert /certs/cert.pem                                   \
                     -key /certs/key.pem                                     \
                     -datadir /datadir                                       \
@@ -296,7 +313,7 @@ class Management(Local):
             #
             # set up dashboard
             #
-            rf'''
+            yield rf'''
                 if [ ! -e /var/lib/netrics-dashboard ]; then
                   sudo mkdir -p /var/lib/netrics-dashboard
                   sudo chown root:$(id -g) /var/lib/netrics-dashboard
@@ -305,7 +322,7 @@ class Management(Local):
 
                 sudo mkdir -p /var/run/netrics-dashboard
 
-                if [ ! -f /var/run/netrics-dashboard/version ]; then
+                if [ ! -f /var/run/netrics-dashboard/version ] || [ "$(</var/run/netrics-dashboard/version)" != {self.args.version} ]; then
                   sudo docker stop netrics-dashboard &>/dev/null
                   sudo docker rm netrics-dashboard &>/dev/null
 
@@ -319,7 +336,7 @@ class Management(Local):
                     --read-only                                               \
                     --user $(id -u):$(id -g)                                  \
                     --name netrics-dashboard                                  \
-                    {args.image_repo}/netrics-dashboard
+                    {self.args.image_repo}/netrics-dashboard:{self.args.version}
 
                   sudo docker inspect                                         \
                     --format="{{{{.Config.Labels.appversion}}}}"              \
@@ -328,14 +345,21 @@ class Management(Local):
                     | xargs echo netrics-dashboard:
                 fi
             '''
-        ]
 
-        #
-        # success
-        #
-        # (Via echo rather than in-Python s.t. carries over to bin/)
-        #
-        yield self.local.FG, self.local['echo'][
-            "Success! "
-            f"Visit http://{NETRICS_HOST}/ to view your local dashboard."
-        ]
+        def prepare(self, args):
+            commands = tuple(self._prepare_commands())
+
+            yield self.local.FG, self.local['ssh'][f'{args.username}@{args.host}'][commands]
+
+            if args.execute_commands:
+                print("Success!", f"Visit http://{NETRICS_HOST}/ to view your local dashboard.")
+
+        @cmdmethod
+        def show(self, args, parser):
+            """merely print remote actions (does NOT execute commands)"""
+            if not args.execute_commands:
+                parser.error('--dry-run does not make sense in this context')
+
+            command_block = '\n\n'.join(command.strip('\n') for command in self._prepare_commands())
+
+            print(textwrap.dedent(command_block).strip())
