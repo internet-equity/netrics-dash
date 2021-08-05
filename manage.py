@@ -76,7 +76,7 @@ class Management(Local):
         if any(grp.getgrgid(group).gr_name == 'docker' for group in os.getgroups()):
             self.docker = self.local['docker']
         else:
-            self.docker = sudo['-E', 'docker']
+            self.docker = sudo['-E', '--preserve-env=PATH', 'docker']
 
     @localmethod('target', choices=('dash', 'ndt'), nargs='?',
                  help="build target (default: all)")
