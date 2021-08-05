@@ -13,22 +13,53 @@ https://hub.docker.com/r/chicagocdac/ndt-server[ndt-server].
 
 == Installation
 
-To manually provision a network-connected Netrics device, a bootstrapping script
-is maintained under link:./bin/netrics-docker-run[bin/netrics-docker-run].
+To provision a Netrics device, a bootstrapping script is maintained under
+link:./bin/netrics-docker-run[bin/netrics-docker-run].
 
-This script is intended for execution from another network-connected device
-(_e.g._ your laptop), and assumes that the Netrics device is accessible at `netrics.local`.
+This script is intended for execution from the Netrics device. To execute this
+script from another network-connected device (_e.g._ your laptop), any tool such
+as SSH should be sufficient.
 
-To execute the script and provision your Netrics device without cloning this repository:
+[TIP]
+====
+The below covers installation of a specified version of the local dashboard.
+
+Consult the repository https://github.com/chicago-cdac/netrics-dash/releases[releases]
+and/or https://github.com/chicago-cdac/netrics-dash/tags[tags].
+
+Or query the latest release (via `curl`):
 
 ```sh
-curl -s https://raw.githubusercontent.com/chicago-cdac/netrics-dash/main/bin/netrics-docker-run | sh
+curl -s --head https://github.com/chicago-cdac/netrics-dash/releases/latest | grep location:
+```
+====
+
+=== Local installation
+
+To execute the script on a Netrics device and provision it with the local
+dashboard &ndash; version 0.1.0 &ndash; _without_ cloning this repository:
+
+```sh
+curl -s https://raw.githubusercontent.com/chicago-cdac/netrics-dash/0.1.0/bin/netrics-docker-run | bash
+```
+
+=== Remote installation
+
+TIP: The Netrics device is _generally_ network-accessible at host name
+`netrics.local` and this will be assumed below.
+
+To execute the script from your laptop and provision your Netrics device with
+the local dashboard &ndash; version 0.1.0 &ndash; _without_ cloning this
+repository:
+
+```sh
+curl -s https://raw.githubusercontent.com/chicago-cdac/netrics-dash/0.1.0/bin/netrics-docker-run | ssh ubuntu@netrics.local
 ```
 
 Or, from a repository clone:
 
 ```sh
-./bin/netrics-docker-run
+<./bin/netrics-docker-run ssh ubuntu@netrics.local
 ```
 
 The local dashboard is then accessible at http://netrics.local/.
