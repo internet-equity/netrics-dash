@@ -20,6 +20,31 @@ NETRICS_USER = 'ubuntu'
 NETRICS_HOST = 'netrics.local'
 
 
+class _FGOut(ExecutionModifier):
+    """plumbum execution modifier to echo output to shell.
+
+    Unlike the built-in `FG`, stdin is *not* affected. This allows
+    commands' stdin to be set programmatically.
+
+    """
+    __slots__ = ('retcode', 'timeout')
+
+    def __init__(self, retcode=0, timeout=None):
+        self.retcode = retcode
+        self.timeout = timeout
+
+    def __rand__(self, cmd):
+        return cmd.run(retcode=self.retcode, stdout=None, stderr=None, timeout=self.timeout)
+
+
+# FIXME: argcmdr should be smarter about default execution modification --
+# FIXME: if the command's stdin is already set it shouldn't be touched
+# FIXME: (by TEE namely) -- such that this modifier isn't necessary
+# FIXME: (or at least not usually).
+
+FGOut = _FGOut()
+
+
 class _SHH(ExecutionModifier):
     """plumbum execution modifier to ensure output is not echoed to terminal
 
@@ -60,6 +85,25 @@ def version_type(value):
         raise ValueError('invalid version number')
 
     return value
+
+
+class PiCommandMixin:
+
+    def __init__(self, parser):
+        super().__init__(parser)
+
+        parser.add_argument(
+            '--username',
+            default=NETRICS_USER,
+            metavar='NAME',
+            help="netrics host username (default: %(default)s)",
+        )
+        parser.add_argument(
+            '--host',
+            default=NETRICS_HOST,
+            metavar='NETLOC',
+            help="netrics local hostname or network locator (default: %(default)s)",
+        )
 
 
 class Management(Local):
@@ -225,26 +269,16 @@ class Management(Local):
                   'view local dashboard at',
                   'http://localhost:8080/' | colors.underline)
 
-    class Provision(Local):
+    class Provision(PiCommandMixin, Local):
         """set up a (local) raspberry pi"""
 
         def __init__(self, parser):
+            super().__init__(parser)
+
             parser.add_argument(
                 '--version',
                 default='latest',
                 help="version of dashboard image to provision (default: %(default)s)",
-            )
-            parser.add_argument(
-                '--username',
-                default=NETRICS_USER,
-                metavar='NAME',
-                help="netrics host username (default: %(default)s)",
-            )
-            parser.add_argument(
-                '--host',
-                default=NETRICS_HOST,
-                metavar='NETLOC',
-                help="netrics local hostname or network locator (default: %(default)s)",
             )
 
         def _prepare_commands(self):
@@ -363,3 +397,40 @@ class Management(Local):
             command_block = '\n\n'.join(command.strip('\n') for command in self._prepare_commands())
 
             print(textwrap.dedent(command_block).strip())
+
+    class Data(PiCommandMixin, Local):
+        """inspect recorded data"""
+
+        @localmethod('limit', nargs='?', default=10, type=int,
+                     help="number of database records to return (default: %(default)s)")
+        @localmethod('--local', action='store_true',
+                     help="read the local development database (rather than the raspberry pi's)")
+        def ndt(self, args):
+            """list recent ndt7 records"""
+            machine = self.local
+
+            if not args.local:
+                machine = machine['ssh'][f'{args.username}@{args.host}']
+
+            command = machine['sqlite3'][
+                '-column',
+                '-header',
+            ]
+
+            if args.local:
+                command = command[REPO_PATH / '.var/data.sqlite']
+            else:
+                command = command['/var/lib/netrics-dashboard/data.sqlite']
+
+            return FGOut, command << f"""\
+                select datetime(ts, 'unixepoch', 'localtime') as datetime,
+                       ts,
+                       size,
+                       period,
+                       8 * size / period as mbaud
+                from trial order by ts desc limit {args.limit}
+            """
+
+        # add FGOut to whitelist to aid argcmdr in identifying output (when using return)
+        # FIXME: argcmdr should likely use isinstance(modifier, ExecutionModifier)
+        ndt.run_modifiers |= {FGOut}
