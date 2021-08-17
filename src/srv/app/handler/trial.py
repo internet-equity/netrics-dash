@@ -1,11 +1,12 @@
 import re
+import sqlite3
 
 from bottle import abort, get, post, put, request, response
 
 from app.db import sqlite as db
 
 
-TRIAL_REPORTING_TIMEOUT = 120
+TRIAL_REPORTING_TIMEOUT = 60
 
 ACTIVE_TRIAL_CONDITION = """\
 size is null and period is null and (strftime('%s', 'now') - ts < ?)\
@@ -85,16 +86,16 @@ def list_trials():
     with db.client.connect() as conn:
         cursor = conn.execute(f"select * from trial {where} order by ts desc {limit}", args)
 
+        names = [column[0] for column in cursor.description]
+
         results = [
-            dict(zip(cursor.description, row))
+            dict(zip(names, row))
             for row in cursor
         ]
 
-        result_count = cursor.rowcount
-
     return {
         'selected': results,
-        'count': result_count,
+        'count': len(results),
     }
 
 
@@ -152,9 +153,12 @@ def create_trial():
         query = "insert into trial default values returning ts"
 
     with db.client.connect() as conn:
-        cursor = conn.execute(query, args)
-
-        (ts,) = cursor.fetchone() or (None,)
+        try:
+            cursor = conn.execute(query, args)
+        except sqlite3.IntegrityError:
+            ts = None
+        else:
+            (ts,) = cursor.fetchone() or (None,)
 
     response.status = 409 if ts is None else 201
 
