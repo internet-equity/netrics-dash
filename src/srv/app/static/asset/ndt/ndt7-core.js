@@ -4,14 +4,14 @@ const ndt7core = (function() {
   return {
     // run runs the specified test with the specified base URL and calls
     // callback to notify the caller of ndt7 events.
-    run: function(baseURL, testName, callback) {
+    run: function(baseURL, assetURL, testName, callback) {
       callback('starting', {Origin: 'client', Test: testName})
       let done = false
 
       /*
        * BEGIN netrics-dash mod: added base path
        */
-      let worker = new Worker('/dashboard/asset/ndt/ndt7-' + testName + '.js')
+      let worker = new Worker(assetURL + 'ndt7-' + testName + '.js')
       /*
        * END netrics-dash mod
        */

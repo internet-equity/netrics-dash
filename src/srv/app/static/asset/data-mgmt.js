@@ -215,7 +215,7 @@ function async_load_plots() {
 function update_trial_stats (wifi_trial, isp_dl) {
   if (Number.isInteger(wifi_trial.total_count) && wifi_trial.total_count > 2) {
     const mbaud = (wifi_trial.stat_mean * 8 / 1e06).toFixed(1),
-          [op, desc, label] = compare_speeds(mbaud, isp_dl),
+          [op, desc, label] = ndt7view.compare_speeds(mbaud, isp_dl),
           info = document.getElementById('wifi-info');
 
     info.innerHTML = `Your Web browser(s) have conducted ${wifi_trial.total_count} download tests of your Wi-Fi. `;
