@@ -1,8 +1,8 @@
 = Netrics Local Dashboard
 
-Local (LAN) dashboard server(s) for extended reporting, measurement and control of Netrics experimentation.
+Local (LAN) dashboard server & browser extension for extended reporting, measurement and control of Netrics experimentation.
 
-This repository provides the source code behind the Netrics local dashboard.
+This repository provides the source code behind the Netrics local dashboard and browser extension.
 Basic orchestration for the local dashboard is also provided, via Docker,
 as well as for its required https://github.com/m-lab/ndt-server[ndt-server].
 
