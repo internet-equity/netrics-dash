@@ -232,6 +232,75 @@ function async_load_trials () {
   return $.getJSON('trial/stats');
 }
 
+
+const extWatcher = {
+  enable: false,
+  installed: null,
+  extDataType: 'ndt7ext',
+  listen: function (event) {
+    // We only accept messages from ourselves
+    if (event.source !== window) return;
+
+    if (event.data.type === this.extDataType) {
+      // DEBUG: console.debug("page received from extension: %s", event.data.text);
+
+      if (! this.installed) {
+        this.installed = true;
+        this.updateView();
+      }
+    }
+  },
+  start: function () {
+    window.addEventListener('message', this.listen.bind(this), false);
+    setTimeout(this.timeout.bind(this), 1000);
+  },
+  timeout: function () {
+    if (this.installed === null) {
+      this.installed = false;
+      this.updateView();
+    }
+  },
+  updateView: function () {
+    var notice = $('.extension-notice'),
+        noticeMissing = $('.extension-notice-missing'),
+        noticeInstalled = $('.extension-notice-installed');
+
+    notice.toggleClass('extension-notice-success', this.installed);
+    notice.toggleClass('extension-notice-failure', ! this.installed);
+
+    noticeInstalled.collapse(this.installed ? 'show' : 'hide');
+    noticeMissing.collapse(this.installed ? 'hide' : 'show');
+
+    notice.collapse('show');
+  },
+  isGoogleChrome: function () {
+    var winNav = window.navigator,
+        userAgent = winNav.userAgent,
+        vendorName = winNav.vendor;
+
+    var hasChromium = Boolean(window.chrome);
+
+    var isOpera = window.opr !== undefined,
+        isIEedge = userAgent.indexOf('Edge') > -1,
+        isIOSChrome = userAgent.indexOf('CriOS') > -1,
+        isGoogle = vendorName === "Google Inc.";
+
+    return isIOSChrome || (
+      hasChromium &&
+      !isOpera &&
+      !isIEedge &&
+      isGoogle
+    );
+  },
+  canInstall: function () {
+    // for now don't bother them unless they're using Google Chrome
+    return this.enable && this.isGoogleChrome();
+  }
+};
+
+if (extWatcher.canInstall()) extWatcher.start();
+
+
 Promise.all([
   async_load_data(),
   async_load_trials()

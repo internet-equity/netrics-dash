@@ -3,13 +3,14 @@
 
 <head>
 
-  <title>Home Network Monitor</title>
+  <title>Home Network Dashboard</title>
 
   <link rel="icon" type="image/svg+xml" href="/dashboard/asset/img/wifi.svg">
 
   <meta charset='utf-8' name="viewport" content="width=device-width, initial-scale=1">
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css">
 
   <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js" integrity="sha384-SR1sx49pcuLnqZUnnPwx6FCym0wLsk5JZuNx2bPPENzswTNFaQU1RDvt3wT4gWFG" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.min.js" integrity="sha384-j0CNLUeiqtyaRmlzUHCPZ+Gy5fQu0dQ6eZ/xAww941Ai1SxSY+0EQqNXNE6DZiVc" crossorigin="anonymous"></script>
@@ -27,11 +28,37 @@
   
     <div class=row>
       <div class="headbar col-xs-8">
-        <h1>Home Network Monitor</h1>
+        <h1>Home Network Dashboard</h1>
       </div>
     </div>
 
-    <div class="row d-flex align-items-start dashrow">
+    <div class="d-flex">
+      <div class="col-2"></div>
+      <div class="col-8 extension-notice collapse d-flex justify-content-between">
+        <p>
+          Home Network Wi-Fi Tester browser extension
+
+          <span class="extension-notice-installed collapse">
+            is installed
+          </span>
+
+          <span class="extension-notice-missing collapse">
+            could not be found&hellip;
+          </span>
+        </p>
+
+        <p class="extension-notice-installed collapse">
+          <i class="bi bi-check-circle-fill"></i>
+        </p>
+
+        <button type="button" class="btn btn-primary extension-notice-missing collapse">
+          Install <i class="bi bi-gear-fill"></i>
+        </button>
+      </div>
+      <div class="col-2"></div>
+    </div>
+
+    <div class="row d-flex align-items-start dashrow dashrow-top">
       	<div class="col-2"></div>
         <div class="col-5">
           <h2>Your experience.</h2>
@@ -48,7 +75,8 @@
           </p>
 	</div>
 
-        <div class="col-3 dashval attn dropdown" id="survey_box">
+    <div class="col-3">
+        <div class="dashval attn dropdown" id="survey_box">
           <button class="btn btn-primary btn-block dropdown-toggle survey" type="button" id="subj_button" data-bs-toggle="dropdown" aria-expanded="false">
 	    <span>How is your<br>Internet?</span>
           </button>
@@ -58,6 +86,7 @@
             <li><a class="dropdown-item" href="#" onclick="subjective.send('unusable')">Unusable</a></li>
           </ul>
 	  <div id="survey_thanks"></div>
+      </div>
 	</div>
 
       	<div class="col-2"></div>
@@ -102,7 +131,7 @@
 	    Accordingly, there are a number of ways of testing bandwidth:
 	      some for UDP and others for TCP.
 	    There are multiple programs for measuring TCP bandwidth.
-	    Netrics runs all of these, to assess their consistency.
+	    Your Network Measurement Device runs all of these, to assess their consistency.
 	    </p>
 	  </div>
 
@@ -113,15 +142,17 @@
 
 	</div>
 
-	<div class="col-3 dashval ok">
-	  <div class=values>
-	    <span id=ookla_dl></span>
-	    <span id=bw_slash>
-              <div class="loader"></div>
-	    </span>
-            <span id=ookla_ul></span>
-	  </div>
-	  <div class=units>megabits per second</div>
+	<div class="col-3">
+    <div class="dashval ok">
+      <div class=values>
+        <span id=ookla_dl></span>
+        <span id=bw_slash>
+                <div class="loader"></div>
+        </span>
+              <span id=ookla_ul></span>
+      </div>
+      <div class=units>megabits per second</div>
+    </div>
 	</div>
       	<div class="col-2"></div>
 
@@ -185,9 +216,11 @@
 
 	</div>
 
-	<div class="col-3 dashval ok">
-	  <div class=values id=wifi_bw><div class="loader"></div></div>
-	  <div class=units>megabits per second</div>
+	<div class="col-3">
+    <div class="dashval ok">
+      <div class=values id=wifi_bw><div class="loader"></div></div>
+      <div class=units>megabits per second</div>
+    </div>
 	</div>
       	<div class="col-2"></div>
 
@@ -232,7 +265,7 @@
 	      For example, the system that retrieves the computer-readable address (like 172.217.4.206)
 	      	from a web URL (like google.com) has a timing delay.
 	      The system is called DNS, and we measure the DNS latency.
-	      In netrics, we also measure latency <em>under load</em>.
+	      Your Network Measurement Device also measures latency <em>under load</em>.
 	      This is just the call and response time, 
 	      	when your network link is fully used.
 	      In practice, this would be like trying to read the New York Times,
@@ -251,9 +284,11 @@
 	</div>
 
 
-	<div class="col-3 dashval ok">
-	  <div class=values id=latency><div class="loader"></div></div>
-	  <div class=units>milliseconds</div>
+	<div class="col-3">
+    <div class="dashval ok">
+      <div class=values id=latency><div class="loader"></div></div>
+      <div class=units>milliseconds</div>
+    </div>
 	</div>
       	<div class="col-2"></div>
 
@@ -267,7 +302,7 @@
           <h2>Peak consumption.</h2>
 
           <p>
-	    Your netrics device can record how much data you transmit
+	    Your Network Measurement Device can record how much data you transmit
 	      per minute and per day.
 	    These data are recorded only if you elect to turn this feature on.
           </p>
@@ -309,9 +344,11 @@
 
 	</div>
 
-	<div class="col-3 dashval ok">
-	  <div class=values id=consumption><div class="loader"></div></div>
-	  <div class=units>megabits per second</div>
+	<div class="col-3">
+    <div class="dashval ok">
+      <div class=values id=consumption><div class="loader"></div></div>
+      <div class=units>megabits per second</div>
+    </div>
 	</div>
       	<div class="col-2"></div>
 
@@ -325,7 +362,7 @@
 
 	  <p>
 	    Many modern electronic devices connect to your Wi-Fi.
-	    Netrics records the number of unique devices that 
+	    Your Network Measurement Device records the number of unique devices that 
 	      connect to your router over time.
           </p>
 
@@ -336,7 +373,7 @@
 	    <p>
 	      Every internet connected devices has a unique identifier, called a MAC address
 	      	for each interface (wifi, ethernet) over which it can connect to a network.
-	      Netrics queries the router for a list of connected devices, every five minutes.
+	      Your Network Measurement Device queries the router for a list of connected devices, every five minutes.
 	    </p>
 	  </div>
 
@@ -347,9 +384,11 @@
 
 	</div>
 
-	<div class="col-3 dashval ok">
-	  <div class=values id=ndev_week><div class="loader"></div></div>
-	  <div class=units>devices in the last week</div>
+	<div class="col-3">
+    <div class="dashval ok">
+      <div class=values id=ndev_week><div class="loader"></div></div>
+      <div class=units>devices in the last week</div>
+    </div>
 	</div>
       	<div class="col-2"></div>
 
