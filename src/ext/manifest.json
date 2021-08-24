@@ -1,0 +1,54 @@
+{
+  "manifest_version": 2,
+
+  "name": "Home Network Wi-Fi Tester",
+  "author": "Center for Data and Computing at the University of Chicago",
+  "homepage_url": "https://cdac.uchicago.edu/research/mapping-and-mitigating-the-urban-digital-divide/",
+  "version": "0.0.1",
+
+  "description": "Run automatic tests of your Wi-Fi to better understand your home network performance. This is a highly recommended companion to the Home Network Dashboard.",
+  "icons": {
+    "48": "img/wifi-48.png",
+    "128": "img/wifi-128.png"
+  },
+
+  "browser_action": {
+    "default_icon": {
+      "16": "img/wifi-16.png",
+      "24": "img/wifi-24.png",
+      "32": "img/wifi-32.png"
+    },
+    "default_title": "Home Network Wi-Fi Tester"
+  },
+
+  "permissions": [
+    "alarms",
+    "background",
+    "notifications",
+    "storage",
+    "http://netrics.local/",
+    "http://netrics.localdomain/"
+  ],
+
+  "content_scripts": [
+    {
+      "matches": [
+        "http://netrics.local/dashboard/*",
+        "http://netrics.localdomain/dashboard/*"
+      ],
+      "js": [
+        "page-connect.js"
+      ]
+    }
+  ],
+
+  "background": {
+    "scripts": [
+      "background.js",
+      "ndt7-common.js",
+      "ndt7-core.js",
+      "ndt7-download.js"
+    ],
+    "persistent": false
+  }
+}
