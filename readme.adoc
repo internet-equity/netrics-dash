@@ -37,10 +37,10 @@ curl -s --head https://github.com/chicago-cdac/netrics-dash/releases/latest | gr
 === Local installation
 
 To execute the script on a Netrics device and provision it with the local
-dashboard &ndash; version 0.1.0 &ndash; _without_ cloning this repository:
+dashboard &ndash; version 0.2.0 &ndash; _without_ cloning this repository:
 
 ```sh
-curl -s https://raw.githubusercontent.com/chicago-cdac/netrics-dash/0.1.0/bin/netrics-docker-run | bash
+curl -s https://raw.githubusercontent.com/chicago-cdac/netrics-dash/0.2.0/bin/netrics-docker-run | bash
 ```
 
 === Remote installation
@@ -49,11 +49,11 @@ TIP: The Netrics device is _generally_ network-accessible at host name
 `netrics.local` and this will be assumed below.
 
 To execute the script from your laptop and provision your Netrics device with
-the local dashboard &ndash; version 0.1.0 &ndash; _without_ cloning this
+the local dashboard &ndash; version 0.2.0 &ndash; _without_ cloning this
 repository:
 
 ```sh
-curl -s https://raw.githubusercontent.com/chicago-cdac/netrics-dash/0.1.0/bin/netrics-docker-run | ssh ubuntu@netrics.local
+curl -s https://raw.githubusercontent.com/chicago-cdac/netrics-dash/0.2.0/bin/netrics-docker-run | ssh ubuntu@netrics.local
 ```
 
 Or, from a repository clone:

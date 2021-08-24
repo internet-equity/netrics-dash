@@ -62,7 +62,7 @@ fi
 
 sudo mkdir -p /var/run/netrics-dashboard
 
-if [ ! -f /var/run/netrics-dashboard/version ] || [ "$(</var/run/netrics-dashboard/version)" != 0.1.0 ]; then
+if [ ! -f /var/run/netrics-dashboard/version ] || [ "$(</var/run/netrics-dashboard/version)" != 0.2.0 ]; then
   sudo docker stop netrics-dashboard &>/dev/null
   sudo docker rm netrics-dashboard &>/dev/null
 
@@ -76,7 +76,7 @@ if [ ! -f /var/run/netrics-dashboard/version ] || [ "$(</var/run/netrics-dashboa
     --read-only                                               \
     --user $(id -u):$(id -g)                                  \
     --name netrics-dashboard                                  \
-    chicagocdac/netrics-dashboard:0.1.0
+    chicagocdac/netrics-dashboard:0.2.0
 
   sudo docker inspect                                         \
     --format="{{.Config.Labels.appversion}}"              \
