@@ -31,7 +31,7 @@ RUN set -ex && \
 WORKDIR /usr/src/"$APPNAME"
 
 # Copy in API source from host disk
-COPY --chown="$APPNAME":"$APPNAME" src/ .
+COPY --chown="$APPNAME":"$APPNAME" src/srv/ srv/
 
 # ...and requirement file(s)
 COPY --chown="$APPNAME":"$APPNAME" requirement/ requirement/
