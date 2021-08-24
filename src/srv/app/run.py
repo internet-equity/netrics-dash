@@ -6,7 +6,7 @@ import bottle
 import whitenoise
 from decouple import config
 
-from app import handler
+from app import handler, middleware
 
 
 APP_PATH = pathlib.Path(__file__).absolute().parent
@@ -25,15 +25,22 @@ def main():
 
     app_should_reload = config('APP_RELOAD', default=False, cast=bool)
 
+    bottle_app = bottle.app()
+
     # WhiteNoise not strictly required --
     # Bottle does support static assets --
     # (but, WhiteNoise is more robust, etc.)
-    app = whitenoise.WhiteNoise(
-        bottle.app(),
+    whitenoise_app = whitenoise.WhiteNoise(
+        bottle_app,
         autorefresh=app_should_reload,
         index_file=True,
         prefix='/dashboard/',
         root=STATIC_PATH,
+    )
+
+    app = middleware.ResponseHeaderMiddleware(
+        whitenoise_app,
+        Software='netrics-dashboard',
     )
 
     bottle.run(
