@@ -78,7 +78,8 @@ def get_points(response, *args, limit=None):
     points = itertools.islice(response.get_points(), limit)
 
     for (name, it) in zip(names, itertools.tee(points, len(names))):
+        values = (point[name] for point in it)
         yield [
-            point[name] if round_to is None else round(point[name], round_to)
-            for point in it
+            value if round_to is None or value is None else round(value, round_to)
+            for value in values
         ]
