@@ -66,10 +66,17 @@ const ndt7view = {
 };
 
 const ndt7run = {
-  ndtAssetUri: '/dashboard/asset/ndt/',
+  ndtTestHost: window.location.host,
+  ndtAssetPath: '/dashboard/asset/ndt/',
 
   runNdt: function (testName, viewUpdater, callback) {
-    ndt7common.run_ndt(testName, viewUpdater, callback, this.ndtAssetUri);
+    ndt7common.run_ndt({
+      testName: testName,
+      updateValues: viewUpdater,
+      done: callback,
+      testHost: this.ndtTestHost,
+      assetUrl: this.ndtAssetPath,
+    });
   },
 
   sendTrial: function (callback, measurement, testName) {
