@@ -1,0 +1,1 @@
+Local network bandwidth tests are to be executed in the background and without user intervention. This permission is recommended for use by background scripts, and helps ensure that tests are run.

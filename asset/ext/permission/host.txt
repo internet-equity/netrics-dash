@@ -1,0 +1,7 @@
+To execute bandwidth tests, the extension communicates with the local device host; and, as a convenience to the study participant, it integrates with the dashboard page served by the device on the local network.
+
+Due to the inconsistency of home network routers, the network-attached device may be assigned various hostnames (with the TLD .local or .localdomain). The extension determines the network-assigned hostname of the network-attached device: (1) for use in the background in its local network bandwidth testing, and (2) to implement its browser icon action, which opens a page to the device dashboard.
+
+(To avoid test lock acquisition errors due to opening multiple instances of the dashboard page -- and thru it performing multiple user-initiated network tests -- the extension attempts to give focus to any tab already open to the dashboard page.)
+
+Finally, the extension sends a window message to the dashboard page, to indicate to it that the extension is installed.
