@@ -1,12 +1,12 @@
 {
   "manifest_version": 2,
 
-  "name": "Home Network Wi-Fi Tester",
+  "name": "Home Network Speed Test",
   "author": "Center for Data and Computing at the University of Chicago",
   "homepage_url": "https://cdac.uchicago.edu/research/mapping-and-mitigating-the-urban-digital-divide/",
   "version": "0.0.1",
 
-  "description": "Run automatic tests of your Wi-Fi to better understand your home network performance. This is a highly recommended companion to the Home Network Dashboard.",
+  "description": "Run automatic speed tests to better understand your home network performance. A recommended companion to the Home Network Dashboard.",
   "icons": {
     "48": "img/wifi-48.png",
     "128": "img/wifi-128.png"
@@ -18,7 +18,7 @@
       "24": "img/wifi-24.png",
       "32": "img/wifi-32.png"
     },
-    "default_title": "Home Network Wi-Fi Tester"
+    "default_title": "Home Network Speed Test"
   },
 
   "permissions": [

@@ -1,5 +1,5 @@
 /*
- * Netrics Wi-Fi Tester background extension
+ * Netrics Network Speed Test background extension
  *
  */
 
@@ -290,10 +290,10 @@ class WifiTester {
         // NOTE: this could also be a welcome HTML page
         chrome.notifications.create('installed', {
           type: 'basic',
-          title: "Installed | Home Network Wi-Fi Tester",
+          title: "Installed | Home Network Speed Test",
           message: "• Your browser will now attempt to detect your Network Measurement Device and open its Dashboard.\n" +
-                   "• In the future you may access the Dashboard by clicking the Wi-Fi Tester extension icon in your browser toolbar.\n" +
-                   "• Your browser will also perform automated tests of your Wi-Fi. You can view the results in the Dashboard.",
+                   "• In the future you may access the Dashboard by clicking the Speed Test extension icon in your browser toolbar.\n" +
+                   "• Your browser will also perform automated tests of your home network. You can view the results in the Dashboard.",
           iconUrl: 'img/wifi-128.png',
           priority: 1
         });
@@ -386,7 +386,7 @@ class WifiTester {
       if (error instanceof SniffFailure) {
         chrome.notifications.create('openDashboard-SniffFailure', {
           type: 'basic',
-          title: "Error | Home Network Wi-Fi Tester",
+          title: "Error | Home Network Speed Test",
           message: "Network Measurement Device could not be found. Please ensure:\n\n" +
                    "1) the device is connected to power and connected to your network\n\n" +
                    "2) your computer is connected to your network (\"online\")",
