@@ -218,9 +218,9 @@ function update_trial_stats (wifi_trial, isp_dl) {
           [op, desc, label] = ndt7view.compare_speeds(mbaud, isp_dl),
           info = document.getElementById('wifi-info');
 
-    info.innerHTML = `Your Web browser(s) have conducted ${wifi_trial.total_count} download tests of your Wi-Fi. `;
+    info.innerHTML = `Your Web browser(s) have conducted ${wifi_trial.total_count} download tests of your home network. `;
     info.innerHTML += (wifi_trial.total_count === wifi_trial.stat_count) ? 'Over these, ' : `In the bulk of these — ${wifi_trial.stat_count} tests — `;
-    info.innerHTML += `your Wi-Fi bandwidth averaged ${mbaud} megabits per second. So, your Wi-Fi bandwidth is usually ${op} that of the connection from your ISP: that's ${desc}.`;
+    info.innerHTML += `your network bandwidth averaged ${mbaud} megabits per second. So, your home network bandwidth is usually ${op} that of the connection from your ISP: that's ${desc}.`;
 
     document.querySelectorAll('.wifi-stats').forEach(elem => {
         elem.style.display = 'initial';
