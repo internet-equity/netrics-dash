@@ -4,6 +4,7 @@ import pathlib
 import re
 import textwrap
 
+import plumbum
 from argcmdr import cmdmethod, Local, localmethod
 from plumbum import colors
 from plumbum.cmd import sudo
@@ -74,6 +75,8 @@ def stream_requirements(file_path):
 
 
 REPO_PATH = pathlib.Path(__file__).absolute().parent
+
+EXTENSION_PATH = REPO_PATH / 'src' / 'ext'
 
 ENV_FILE = REPO_PATH / '.env'
 
@@ -434,3 +437,21 @@ class Management(Local):
         # add FGOut to whitelist to aid argcmdr in identifying output (when using return)
         # FIXME: argcmdr should likely use isinstance(modifier, ExecutionModifier)
         ndt.run_modifiers |= {FGOut}
+
+    @localmethod('path', nargs='?',
+                 default=f'{os.path.curdir}{os.path.sep}ext.zip',
+                 type=lambda path: pathlib.Path(path).absolute(),
+                 help="path to which to write file (default: %(default)s)")
+    def zip(self, args):
+        """build a zip file of the extension source tree suitable for publishing"""
+        with plumbum.local.cwd(EXTENSION_PATH):
+            # can't just pass * without shell
+            # ensure relative paths for zip member names
+            extension_sources = tuple(pathlib.Path(os.path.curdir).glob('*'))
+
+            # yield (not return) s.t. still in cwd when executed
+            yield self.local['zip'][
+                '-r',
+                args.path,
+                extension_sources,
+            ]
