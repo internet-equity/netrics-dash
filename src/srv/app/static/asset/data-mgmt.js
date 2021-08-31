@@ -234,7 +234,7 @@ function async_load_trials () {
 
 
 const extWatcher = {
-  enable: false,
+  enabled: true,
   installed: null,
   extDataType: 'ndt7ext',
   listen: function (event) {
@@ -294,7 +294,7 @@ const extWatcher = {
   },
   canInstall: function () {
     // for now don't bother them unless they're using Google Chrome
-    return this.enable && this.isGoogleChrome();
+    return this.enabled && this.isGoogleChrome();
   }
 };
 

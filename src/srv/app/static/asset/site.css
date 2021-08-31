@@ -75,6 +75,11 @@ ul.dropdown-menu>li {
     border: 1px solid #04A;
     color: #212529;
 }
+.extension-notice .btn-primary:hover {
+    color: #fff;
+    background-color: #0b5ed7;
+    border-color: #0a58ca;
+}
 
 .dashrow {
   padding-bottom: 35px;
