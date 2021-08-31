@@ -24,6 +24,7 @@ def main():
     init_submodules(handler)
 
     app_should_reload = config('APP_RELOAD', default=False, cast=bool)
+    app_version = config('APP_VERSION', default=None)
 
     bottle_app = bottle.app()
 
@@ -38,8 +39,11 @@ def main():
         root=STATIC_PATH,
     )
 
+    version_headers = () if app_version is None else [('Software-Version', app_version)]
+
     app = middleware.ResponseHeaderMiddleware(
         whitenoise_app,
+        *version_headers,
         Software='netrics-dashboard',
     )
 
