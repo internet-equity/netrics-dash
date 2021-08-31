@@ -29,6 +29,11 @@ footer > p {
   font-size: 14px;
   margin: 5px;
   padding: 5px 0;
+  text-align: center;
+}
+
+footer img.brand {
+  width: 2%;
 }
 
 ul.dropdown-menu>li {
