@@ -292,9 +292,13 @@ const extWatcher = {
       isGoogle
     );
   },
+  hostPattern: /^(netrics\.)?local/,
+  isProperHost: function () {
+    return this.hostPattern.test(window.location.hostname);
+  },
   canInstall: function () {
     // for now don't bother them unless they're using Google Chrome
-    return this.enabled && this.isGoogleChrome();
+    return this.enabled && this.isProperHost() && this.isGoogleChrome();
   }
 };
 

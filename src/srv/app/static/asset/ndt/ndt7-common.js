@@ -5,7 +5,7 @@ const ndt7common = (function () {
     run_ndt: ({testName, testHost, assetUrl='', updateValues=noop, done=noop}) => {
       let hostname = testHost.match(/^([^:]+)(?::|$)/)[1];
 
-      if (hostname === 'localhost') {
+      if (hostname === 'localhost' || hostname === '0.0.0.0') {
         // we'll presume for the moment that we still want to test against the Pi
         // ...and guess that it's at netrics.local!
         hostname = 'netrics.local';
