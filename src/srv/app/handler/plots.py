@@ -1,6 +1,6 @@
 from bottle import route
 
-from app.db import influx as db
+from app.data.db import influx as db
 
 
 @route('/dashboard/plots', method='GET')
