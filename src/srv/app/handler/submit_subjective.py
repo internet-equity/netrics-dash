@@ -1,6 +1,6 @@
 from bottle import abort, request, route
 
-from app.db import sqlite as db
+from app.data.db import sqlite as db
 
 
 PERF_LABELS = ('good', 'slow', 'unusable')

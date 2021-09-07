@@ -3,7 +3,7 @@ import sqlite3
 
 from bottle import abort, get, post, put, request, response
 
-from app.db import sqlite as db
+from app.data.db import sqlite as db
 
 
 TRIAL_REPORTING_TIMEOUT = 60
