@@ -402,7 +402,7 @@ class Management(Local):
 
             command_block = '\n\n'.join(command.strip('\n') for command in self._prepare_commands())
 
-            print(textwrap.dedent(command_block).strip())
+            print('#!/bin/bash', textwrap.dedent(command_block).strip(), sep='\n\n')
 
     class Data(PiCommandMixin, Local):
         """inspect recorded data"""
