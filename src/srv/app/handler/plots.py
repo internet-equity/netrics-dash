@@ -1,39 +1,42 @@
-from bottle import route
+import functools
 
-from app.data.db import influx as db
+from bottle import get as GET
+
+from app.data.file import FlatFileBank, ONE_WEEK_S
 
 
-@route('/dashboard/plots', method='GET')
+@GET('/dashboard/plots')
 def get_measurements():
-    with db.Client() as client:
-        res = client.query(QUERY_SPEED)
-        bw_ts = [pt['time'] for pt in res.get_points()]
-        (bw_dl, bw_ul) = db.get_points(res, 'dl', 'ul', 2)
+    bank = FlatFileBank(round_to=2)
 
-        res = client.query(QUERY_LATENCY)
-        rtt_ts = [pt['time'] for pt in res.get_points()]
-        (rtt_google, rtt_amazon, rtt_wikipedia) = db.get_points(
-            res,
-            'google',
-            'amazon',
-            'wikipedia',
-            2,
-        )
+    get_columns = functools.partial(bank.get_columns, age_s=ONE_WEEK_S, reverse=True)
 
-        res = client.query(QUERY_CONSUMPTION)
-        con_ts = [pt['time'] for pt in res.get_points()]
-        (con_dl, con_ul) = db.get_points(res, 'dl', 'ul', 2)
+    (bw_dl, bw_ul, bw_ts) = get_columns(
+        (
+            'ookla.speedtest_ookla_download',
+            'ookla.speedtest_ookla_upload',
+        ),
+        decorate='Time',
+    )
 
-        res = client.query(QUERY_NDEV)
-        dev_ts = [pt['time'] for pt in res.get_points()]
-        (dev_now, dev_1d, dev_1w, dev_tot) = db.get_points(
-            res,
-            'devices_active',
-            'devices_1day',
-            'devices_1week',
-            'devices_total',
-            2,
-        )
+    (rtt_google, rtt_amazon, rtt_wikipedia, rtt_ts) = get_columns(
+        (
+            'ping_latency.google_rtt_avg_ms',
+            'ping_latency.amazon_rtt_avg_ms',
+            'ping_latency.wikipedia_rtt_avg_ms',
+        ),
+        decorate='Time',
+    )
+
+    (dev_now, dev_1d, dev_1w, dev_tot, dev_ts) = get_columns(
+        (
+          'connected_devices_arp.devices_active',
+          'connected_devices_arp.devices_1day',
+          'connected_devices_arp.devices_1week',
+          'connected_devices_arp.devices_total',
+        ),
+        decorate='Time',
+    )
 
     return {
         'bw': {
@@ -47,10 +50,11 @@ def get_measurements():
             'amazon': rtt_amazon,
             'wikipedia': rtt_wikipedia,
         },
+        # note: not currently included: consumption
         'consumption': {
-            'ts': con_ts,
-            'dl': con_dl,
-            'ul': con_ul,
+            'ts': (),
+            'dl': (),
+            'ul': (),
         }, 
         'devices': {
             'ts': dev_ts,
@@ -60,48 +64,3 @@ def get_measurements():
             'tot': dev_tot,
         },
     }
-
-
-QUERY_SPEED = """\
-SELECT
-  time,
-  speedtest_ookla_download AS dl,
-  speedtest_ookla_upload   AS ul
-FROM networks
-WHERE
-  install = $install_id AND 
-  time > now() - 1w
-ORDER BY time ASC
-"""
-
-QUERY_LATENCY = """\
-SELECT
-  time,
-  google_rtt_avg_ms AS google,
-  amazon_rtt_avg_ms AS amazon,
-  wikipedia_rtt_avg_ms AS wikipedia
-FROM 
-  networks
-WHERE
-  install = $install_id AND 
-  time > now() - 1w
-ORDER BY time ASC
-"""
-
-QUERY_CONSUMPTION = """\
-SELECT time, consumption_download AS dl, consumption_upload AS ul
-FROM   networks
-WHERE  install = $install_id AND time > now() - 1w
-ORDER BY time ASC
-"""
-
-QUERY_NDEV = """\
-SELECT
-  time, devices_active, devices_1day, devices_1week, devices_total
-FROM 
-  networks
-WHERE
-  install = $install_id AND 
-  time > now() - 1w
-ORDER BY time ASC
-"""

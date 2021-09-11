@@ -363,16 +363,19 @@ class Management(Local):
                   sudo docker stop netrics-dashboard &>/dev/null
                   sudo docker rm netrics-dashboard &>/dev/null
 
-                  sudo docker run                                             \
-                    --detach                                                  \
-                    --restart=always                                          \
-                    --network=bridge                                          \
-                    --publish 80:8080                                         \
-                    --env-file /etc/nm-exp-active-netrics/.env                \
-                    --volume /var/lib/netrics-dashboard:/var/lib/dashboard    \
-                    --read-only                                               \
-                    --user $(id -u):$(id -g)                                  \
-                    --name netrics-dashboard                                  \
+                  sudo docker run                                                    \
+                    --detach                                                         \
+                    --restart=always                                                 \
+                    --network=bridge                                                 \
+                    --publish 80:8080                                                \
+                    --env DATAFILE_PENDING=/var/lib/nm/upload/pending/default/json/  \
+                    --env DATAFILE_ARCHIVE=/var/lib/nm/upload/archive/default/json/  \
+                    --env-file /etc/nm-exp-active-netrics/.env                       \
+                    --volume /var/lib/netrics-dashboard:/var/lib/dashboard           \
+                    --volume /var/nm/nm-exp-active-netrics:/var/lib/nm:ro            \
+                    --read-only                                                      \
+                    --user $(id -u):$(id -g)                                         \
+                    --name netrics-dashboard                                         \
                     {self.args.image_repo}/netrics-dashboard:{self.args.version}
 
                   sudo docker inspect                                         \

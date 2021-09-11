@@ -120,7 +120,7 @@ function toggle (a, target) {
 }
 
 
-function make_plots(data) {
+function make_plots (data) {
   var config = {"displayModeBar" : false}
 
   var layout = {
@@ -131,7 +131,6 @@ function make_plots(data) {
     showlegend: true,
     legend: {"orientation": "v", "x" : 0.05, "y" : 0.95}
   };
-
 
   // BANDWIDTH
 
@@ -207,8 +206,28 @@ function make_plots(data) {
 }
 
 
-function async_load_plots() {
-  return $.getJSON('plots', make_plots);
+function async_load_plots () {
+  return $.getJSON('plots')
+    // fix timestamps
+    .then(data => Object.fromEntries(
+      Object.entries(data).map(([name, block]) => {
+        const fixed = Object.assign({}, block)
+
+        fixed.ts = []
+
+        for (let stamp of block.ts) {
+          if (typeof stamp === 'number') {
+            const date = new Date(stamp * 1000)
+            stamp = date.toISOString()
+          }
+
+          fixed.ts.push(stamp)
+        }
+
+        return [name, fixed]
+      })
+    ))
+    .done(make_plots)
 }
 
 
