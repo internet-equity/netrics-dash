@@ -230,6 +230,8 @@ class Management(Local):
                  help="do NOT mount the host filesystem's under-development "
                       "repository tree (src/) into the container and "
                       "do NOT configure server to autoreload source")
+    @localmethod('--upload', type=pathlib.Path,
+                 help="local path to mounted data upload directory")
     def serve(self, args):
         """serve dashboard locally"""
         for cleanup_command in ('stop', 'rm'):
@@ -261,6 +263,13 @@ class Management(Local):
                 '--env', 'APP_RELOAD=1',
                 '--volume', str(REPO_PATH / 'src') + ':/usr/src/dashboard',
                 '--volume', str(REPO_PATH / '.var') + ':/var/lib/dashboard',
+            ]
+
+        if args.upload:
+            run_command = run_command[
+                '--env', 'DATAFILE_PENDING=/var/lib/nm/upload/pending/default/json/',
+                '--env', 'DATAFILE_ARCHIVE=/var/lib/nm/upload/archive/default/json/',
+                '--volume', str(args.upload / 'nm-exp-active-netrics') + ':/var/lib/nm',
             ]
 
         yield SHH, run_command[
