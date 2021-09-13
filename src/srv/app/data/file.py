@@ -27,7 +27,7 @@ DATA_PATHS = (
     ((DATAFILE_ARCHIVE,) if DATAFILE_ARCHIVE else ())
 )
 
-DATAFILE_LIMIT = DATA_CACHE_SIZE = 500
+DATAFILE_LIMIT = DATA_CACHE_SIZE = 5_000
 
 DATAFILE_PREFIX = 'Measurements'
 
@@ -180,6 +180,13 @@ class FlatFileBank(DataFileBank):
         points = self.get_points(
             Multi(read_key, age_s, decorate=decorate, reverse=reverse)
         )
+
+        if points is None:
+            count = 1 if isinstance(read_key, str) else len(read_key)
+            if decorate:
+                count += 1 if isinstance(decorate, str) else len(decorate)
+
+            return (None,) * count
 
         (data_comp, meta) = zip(*points) if decorate else (points, None)
 

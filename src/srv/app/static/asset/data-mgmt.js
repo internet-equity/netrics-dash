@@ -213,15 +213,17 @@ function async_load_plots () {
       Object.entries(data).map(([name, block]) => {
         const fixed = Object.assign({}, block)
 
-        fixed.ts = []
+        if (block.ts) {
+          fixed.ts = []
 
-        for (let stamp of block.ts) {
-          if (typeof stamp === 'number') {
-            const date = new Date(stamp * 1000)
-            stamp = date.toISOString()
+          for (let stamp of block.ts) {
+            if (typeof stamp === 'number') {
+              const date = new Date(stamp * 1000)
+              stamp = date.toISOString()
+            }
+
+            fixed.ts.push(stamp)
           }
-
-          fixed.ts.push(stamp)
         }
 
         return [name, fixed]
