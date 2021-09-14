@@ -267,9 +267,9 @@ class Management(Local):
 
         if args.upload:
             run_command = run_command[
-                '--env', 'DATAFILE_PENDING=/var/lib/nm/upload/pending/default/json/',
-                '--env', 'DATAFILE_ARCHIVE=/var/lib/nm/upload/archive/default/json/',
-                '--volume', str(args.upload / 'nm-exp-active-netrics') + ':/var/lib/nm',
+                '--env', 'DATAFILE_PENDING=/var/nm/nm-exp-active-netrics/upload/pending/default/json/',
+                '--env', 'DATAFILE_ARCHIVE=/var/nm/nm-exp-active-netrics/upload/archive/default/json/',
+                '--volume', f'{args.upload}:/var/nm',
             ]
 
         yield SHH, run_command[
@@ -372,19 +372,19 @@ class Management(Local):
                   sudo docker stop netrics-dashboard &>/dev/null
                   sudo docker rm netrics-dashboard &>/dev/null
 
-                  sudo docker run                                                    \
-                    --detach                                                         \
-                    --restart=always                                                 \
-                    --network=bridge                                                 \
-                    --publish 80:8080                                                \
-                    --env DATAFILE_PENDING=/var/lib/nm/upload/pending/default/json/  \
-                    --env DATAFILE_ARCHIVE=/var/lib/nm/upload/archive/default/json/  \
-                    --env-file /etc/nm-exp-active-netrics/.env                       \
-                    --volume /var/lib/netrics-dashboard:/var/lib/dashboard           \
-                    --volume /var/nm/nm-exp-active-netrics:/var/lib/nm:ro            \
-                    --read-only                                                      \
-                    --user $(id -u):$(id -g)                                         \
-                    --name netrics-dashboard                                         \
+                  sudo docker run                                                                          \
+                    --detach                                                                               \
+                    --restart=always                                                                       \
+                    --network=bridge                                                                       \
+                    --publish 80:8080                                                                      \
+                    --env DATAFILE_PENDING=/var/nm/nm-exp-active-netrics/upload/pending/default/json/      \
+                    --env DATAFILE_ARCHIVE=/var/nm/nm-exp-active-netrics/upload/archive/default/json/      \
+                    --env-file /etc/nm-exp-active-netrics/.env                                             \
+                    --volume /var/lib/netrics-dashboard:/var/lib/dashboard                                 \
+                    --volume /var/nm:/var/nm:ro                                                            \
+                    --read-only                                                                            \
+                    --user $(id -u):$(id -g)                                                               \
+                    --name netrics-dashboard                                                               \
                     {self.args.image_repo}/netrics-dashboard:{self.args.version}
 
                   sudo docker inspect                                         \
@@ -393,6 +393,65 @@ class Management(Local):
                     | sudo tee /var/run/netrics-dashboard/version             \
                     | xargs echo netrics-dashboard:
                 fi
+            '''
+
+            #
+            # set up data backups
+            #
+            yield rf'''
+                echo <<SCRIPT
+                #!/bin/sh
+                docker run                                                                                 \
+                    --rm                                                                                   \
+                    --network=bridge                                                                       \
+                    --env-file /etc/nm-exp-active-netrics/.env                                             \
+                    --volume /var/lib/netrics-dashboard:/var/lib/dashboard                                 \
+                    --volume /var/nm:/var/nm:rw                                                            \
+                    --read-only                                                                            \
+                    --user $(id -u):$(id -g)                                                               \
+                    --name netrics-dashboard-command                                                       \
+                    {self.args.image_repo}/netrics-dashboard:{self.args.version}                           \
+                    python -m app.cmd "$@"
+                SCRIPT
+                | sudo tee /usr/local/bin/local-dashboard > /dev/null
+
+                sudo chmod +x /usr/local/bin/local-dashboard
+
+                echo <<SCRIPT
+                #!/bin/sh
+
+                if [ "$#" -ne 1 ]
+                then
+                  echo "Usage: $0 path"
+                  exit 1
+                fi
+
+                SOURCE=/usr/local/lib/ndt-server/datadir/ndt7/
+                TARGET="$1/pending/ndt7/json/"
+
+                find "$SOURCE" -type f -print0 | xargs -0 mv -t "$TARGET"
+                find "$SOURCE"/* -type d -empty -delete
+                SCRIPT
+                | sudo tee /usr/local/bin/ndt7-backup > /dev/null
+
+                sudo chmod +x /usr/local/bin/ndt7-backup
+
+                echo <<CRONTAB
+                @midnight  netrics  sudo /usr/local/bin/local-dashboard backupdb --compress /var/nm/nm-exp-local-dashboard/upload/
+                @midnight  netrics  sudo /usr/local/bin/ndt7-backup /var/nm/nm-exp-local-dashboard/upload/
+                CRONTAB
+                | sudo tee /etc/cron.d/nm-exp-local-dashboard > /dev/null
+
+                for directory in /var/nm/nm-exp-local-dashboard/upload/pending/survey/csv/ \
+                                 /var/nm/nm-exp-local-dashboard/upload/pending/trial/csv/  \
+                                 /var/nm/nm-exp-local-dashboard/upload/archive/survey/csv/ \
+                                 /var/nm/nm-exp-local-dashboard/upload/archive/trial/csv/  \
+                                 /var/nm/nm-exp-local-dashboard/upload/pending/ndt7/json/ \
+                                 /var/nm/nm-exp-local-dashboard/upload/archive/ndt7/json/
+                do
+                    sudo mkdir -p $directory
+                    sudo chown netrics:netrics $directory
+                done
             '''
 
         def prepare(self, args):

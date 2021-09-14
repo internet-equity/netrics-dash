@@ -6,6 +6,12 @@ import app
 
 SQLITE_DEFAULT = app.APP_PATH / 'data.sqlite'
 
+# For downstream maintenance, etc.
+TABLE_SCHEMA = (
+    ('survey', ('ts', 'subj')),
+    ('trial', ('ts', 'size', 'period')),
+)
+
 # NOTE: rowid ommitted to prevent sqlite from substituting a sequential rowid
 # NOTE: for the correct timestamp default;
 # NOTE: (however, there might be better solutions).
