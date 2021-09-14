@@ -399,7 +399,7 @@ class Management(Local):
             # set up data backups
             #
             yield rf'''
-                echo <<SCRIPT
+                cat <<'SCRIPT' | sudo tee /usr/local/bin/local-dashboard > /dev/null
                 #!/bin/sh
                 docker run                                                                                 \
                     --rm                                                                                   \
@@ -413,11 +413,10 @@ class Management(Local):
                     {self.args.image_repo}/netrics-dashboard:{self.args.version}                           \
                     python -m app.cmd "$@"
                 SCRIPT
-                | sudo tee /usr/local/bin/local-dashboard > /dev/null
 
                 sudo chmod +x /usr/local/bin/local-dashboard
 
-                echo <<SCRIPT
+                cat <<'SCRIPT' | sudo tee /usr/local/bin/ndt7-backup > /dev/null
                 #!/bin/sh
 
                 if [ "$#" -ne 1 ]
@@ -429,18 +428,22 @@ class Management(Local):
                 SOURCE=/usr/local/lib/ndt-server/datadir/ndt7/
                 TARGET="$1/pending/ndt7/json/"
 
+                if [ ! -d "$TARGET" ]
+                then
+                  echo "no such directory: $TARGET"
+                  exit 1
+                fi
+
                 find "$SOURCE" -type f -print0 | xargs -0 mv -t "$TARGET"
                 find "$SOURCE"/* -type d -empty -delete
                 SCRIPT
-                | sudo tee /usr/local/bin/ndt7-backup > /dev/null
 
                 sudo chmod +x /usr/local/bin/ndt7-backup
 
-                echo <<CRONTAB
+                cat <<'CRONTAB' | sudo tee /etc/cron.d/nm-exp-local-dashboard > /dev/null
                 @midnight  netrics  sudo /usr/local/bin/local-dashboard backupdb --compress /var/nm/nm-exp-local-dashboard/upload/
                 @midnight  netrics  sudo /usr/local/bin/ndt7-backup /var/nm/nm-exp-local-dashboard/upload/
                 CRONTAB
-                | sudo tee /etc/cron.d/nm-exp-local-dashboard > /dev/null
 
                 for directory in /var/nm/nm-exp-local-dashboard/upload/pending/survey/csv/ \
                                  /var/nm/nm-exp-local-dashboard/upload/pending/trial/csv/  \
@@ -454,8 +457,12 @@ class Management(Local):
                 done
             '''
 
+        def _clean_commands(self, commands):
+            command_block = '\n\n'.join(command.strip('\n') for command in commands)
+            return textwrap.dedent(command_block).strip()
+
         def prepare(self, args):
-            commands = tuple(self._prepare_commands())
+            commands = self._clean_commands(self._prepare_commands())
 
             yield self.local.FG, self.local['ssh'][f'{args.username}@{args.host}'][commands]
 
@@ -468,9 +475,9 @@ class Management(Local):
             if not args.execute_commands:
                 parser.error('--dry-run does not make sense in this context')
 
-            command_block = '\n\n'.join(command.strip('\n') for command in self._prepare_commands())
+            commands = self._clean_commands(self._prepare_commands())
 
-            print('#!/bin/bash', textwrap.dedent(command_block).strip(), sep='\n\n')
+            print('#!/bin/bash', commands, sep='\n\n')
 
     class Data(PiCommandMixin, Local):
         """inspect recorded data"""

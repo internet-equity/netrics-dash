@@ -1,5 +1,6 @@
 import contextlib
 import csv
+import gzip
 import pathlib
 import re
 import sys
@@ -117,8 +118,8 @@ class BackupDB(Command):
 
     def backup_table(self, table_name, columns, target, compress):
         if target:
-            table_target = args.target / 'pending' / table_name / 'csv'
-            table_archive = args.target / 'archive' / table_name / 'csv'
+            table_target = target / 'pending' / table_name / 'csv'
+            table_archive = target / 'archive' / table_name / 'csv'
 
             table_target.mkdir(parents=True, exist_ok=True)
             table_archive.mkdir(parents=True, exist_ok=True)
