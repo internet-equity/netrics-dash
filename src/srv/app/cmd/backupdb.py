@@ -126,7 +126,7 @@ class BackupDB(Command):
 
             try:
                 # fall back to archive directory in case pending recently emptied
-                last_written = max(table_target.iterdir(), None) or max(table_archive.iterdir())
+                last_written = max(table_target.iterdir(), default=None) or max(table_archive.iterdir())
             except ValueError:
                 # first backup
                 since = 0
