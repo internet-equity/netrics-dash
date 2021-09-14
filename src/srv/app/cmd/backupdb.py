@@ -168,11 +168,9 @@ class BackupDB(Command):
 
             if compress:
                 file_name += '.gz'
-                constructor = gzip.open
+                opener = lambda: gzip.open(table_target / file_name, 'wt')
             else:
-                constructor = open
-
-            opener = lambda: constructor(table_target / file_name, 'w')
+                opener = lambda: open(table_target / file_name, 'w')
         else:
             opener = lambda: contextlib.nullcontext(sys.stdout)
 
