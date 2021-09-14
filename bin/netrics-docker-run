@@ -62,24 +62,24 @@ fi
 
 sudo mkdir -p /var/run/netrics-dashboard
 
-if [ ! -f /var/run/netrics-dashboard/version ] || [ "$(</var/run/netrics-dashboard/version)" != 0.3.1 ]; then
+if [ ! -f /var/run/netrics-dashboard/version ] || [ "$(</var/run/netrics-dashboard/version)" != 0.4.0 ]; then
   sudo docker stop netrics-dashboard &>/dev/null
   sudo docker rm netrics-dashboard &>/dev/null
 
-  sudo docker run                                                    \
-    --detach                                                         \
-    --restart=always                                                 \
-    --network=bridge                                                 \
-    --publish 80:8080                                                \
-    --env DATAFILE_PENDING=/var/lib/nm/upload/pending/default/json/  \
-    --env DATAFILE_ARCHIVE=/var/lib/nm/upload/archive/default/json/  \
-    --env-file /etc/nm-exp-active-netrics/.env                       \
-    --volume /var/lib/netrics-dashboard:/var/lib/dashboard           \
-    --volume /var/nm/nm-exp-active-netrics:/var/lib/nm:ro            \
-    --read-only                                                      \
-    --user $(id -u):$(id -g)                                         \
-    --name netrics-dashboard                                         \
-    chicagocdac/netrics-dashboard:0.3.1
+  sudo docker run                                                                          \
+    --detach                                                                               \
+    --restart=always                                                                       \
+    --network=bridge                                                                       \
+    --publish 80:8080                                                                      \
+    --env DATAFILE_PENDING=/var/nm/nm-exp-active-netrics/upload/pending/default/json/      \
+    --env DATAFILE_ARCHIVE=/var/nm/nm-exp-active-netrics/upload/archive/default/json/      \
+    --env-file /etc/nm-exp-active-netrics/.env                                             \
+    --volume /var/lib/netrics-dashboard:/var/lib/dashboard                                 \
+    --volume /var/nm:/var/nm:ro                                                            \
+    --read-only                                                                            \
+    --user $(id -u):$(id -g)                                                               \
+    --name netrics-dashboard                                                               \
+    chicagocdac/netrics-dashboard:0.4.0
 
   sudo docker inspect                                         \
     --format="{{.Config.Labels.appversion}}"              \
@@ -87,3 +87,61 @@ if [ ! -f /var/run/netrics-dashboard/version ] || [ "$(</var/run/netrics-dashboa
     | sudo tee /var/run/netrics-dashboard/version             \
     | xargs echo netrics-dashboard:
 fi
+
+
+cat <<'SCRIPT' | sudo tee /usr/local/bin/local-dashboard > /dev/null
+#!/bin/sh
+docker run                                                                                 \
+    --rm                                                                                   \
+    --network=bridge                                                                       \
+    --env-file /etc/nm-exp-active-netrics/.env                                             \
+    --volume /var/lib/netrics-dashboard:/var/lib/dashboard                                 \
+    --volume /var/nm:/var/nm:rw                                                            \
+    --read-only                                                                            \
+    --user $(id -u):$(id -g)                                                               \
+    --name netrics-dashboard-command                                                       \
+    chicagocdac/netrics-dashboard:0.4.0                           \
+    python -m app.cmd "$@"
+SCRIPT
+
+sudo chmod +x /usr/local/bin/local-dashboard
+
+cat <<'SCRIPT' | sudo tee /usr/local/bin/ndt7-backup > /dev/null
+#!/bin/sh
+
+if [ "$#" -ne 1 ]
+then
+  echo "Usage: $0 path"
+  exit 1
+fi
+
+SOURCE=/usr/local/lib/ndt-server/datadir/ndt7/
+TARGET="$1/pending/ndt7/json/"
+
+if [ ! -d "$TARGET" ]
+then
+  echo "no such directory: $TARGET"
+  exit 1
+fi
+
+find "$SOURCE" -type f -print0 | xargs -0 mv -t "$TARGET"
+find "$SOURCE"/* -type d -empty -delete
+SCRIPT
+
+sudo chmod +x /usr/local/bin/ndt7-backup
+
+cat <<'CRONTAB' | sudo tee /etc/cron.d/nm-exp-local-dashboard > /dev/null
+@midnight  netrics  sudo /usr/local/bin/local-dashboard backupdb --compress /var/nm/nm-exp-local-dashboard/upload/
+@midnight  netrics  sudo /usr/local/bin/ndt7-backup /var/nm/nm-exp-local-dashboard/upload/
+CRONTAB
+
+for directory in /var/nm/nm-exp-local-dashboard/upload/pending/survey/csv/ \
+                 /var/nm/nm-exp-local-dashboard/upload/pending/trial/csv/  \
+                 /var/nm/nm-exp-local-dashboard/upload/archive/survey/csv/ \
+                 /var/nm/nm-exp-local-dashboard/upload/archive/trial/csv/  \
+                 /var/nm/nm-exp-local-dashboard/upload/pending/ndt7/json/ \
+                 /var/nm/nm-exp-local-dashboard/upload/archive/ndt7/json/
+do
+    sudo mkdir -p $directory
+    sudo chown netrics:netrics $directory
+done
