@@ -208,7 +208,7 @@ function make_plots (data) {
 
 function async_load_plots () {
   return $.getJSON('plots')
-    // fix timestamps
+    // convert timestamp -> Date to ensure formatting
     .then(data => Object.fromEntries(
       Object.entries(data).map(([name, block]) => {
         const fixed = Object.assign({}, block)
@@ -218,8 +218,7 @@ function async_load_plots () {
 
           for (let stamp of block.ts) {
             if (typeof stamp === 'number') {
-              const date = new Date(stamp * 1000)
-              stamp = date.toISOString()
+              stamp = new Date(stamp * 1000)
             }
 
             fixed.ts.push(stamp)
