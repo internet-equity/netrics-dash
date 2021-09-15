@@ -434,7 +434,7 @@ class Management(Local):
                   exit 1
                 fi
 
-                find "$SOURCE" -type f -print0 | xargs -0 mv -t "$TARGET"
+                find "$SOURCE" -type f -print0 | xargs -0 -r mv -t "$TARGET"
                 find "$SOURCE"/* -type d -empty -delete
                 SCRIPT
 
