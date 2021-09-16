@@ -257,6 +257,7 @@ const extWatcher = {
   enabled: true,
   installed: null,
   extDataType: 'ndt7ext',
+  storageKeys: ['notInstalledDimiss', 'installedDismiss'],
   listen: function (event) {
     // We only accept messages from ourselves
     if (event.source !== window) return;
@@ -281,6 +282,8 @@ const extWatcher = {
     }
   },
   updateView: function () {
+    if (this.getDismiss()) return;
+
     var notice = $('.extension-notice'),
         noticeMissing = $('.extension-notice-missing'),
         noticeInstalled = $('.extension-notice-installed');
@@ -292,6 +295,34 @@ const extWatcher = {
     noticeMissing.collapse(this.installed ? 'hide' : 'show');
 
     notice.collapse('show');
+
+    notice.click(this, this._dismiss);
+  },
+  _dismiss: function (event) {
+    // collapse notice IFF it wasn't the installation link that they clicked
+    if (! event.target.href) {
+      $(this).collapse('hide')
+
+      // persist their election to dismiss this notice
+      event.data.setDismiss()
+    }
+  },
+  getDismissKey: function () {
+      const keyIndex = Number(this.installed)
+
+      return this.storageKeys[keyIndex]
+  },
+  getDismiss: function () {
+      const storageKey = this.getDismissKey()
+
+      return storageKey && localStorage.getItem(storageKey)
+  },
+  setDismiss: function () {
+      const storageKey = this.getDismissKey()
+
+      if (storageKey) {
+        localStorage.setItem(storageKey, '1')
+      }
   },
   isGoogleChrome: function () {
     var winNav = window.navigator,
