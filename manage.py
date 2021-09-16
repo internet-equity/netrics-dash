@@ -416,13 +416,55 @@ class Management(Local):
 
                 sudo chmod +x /usr/local/bin/local-dashboard
 
+                cat <<'SCRIPT' | sudo tee /usr/local/bin/local-dashboard-backupdb > /dev/null
+                #!/bin/sh
+
+                if [ "$1" = --group ]
+                then
+                  if [ "$#" -ne 3 ]
+                  then
+                    echo "Usage: $0 [--group GROUP] DIRECTORY" >&2
+                    exit 1
+                  fi
+                  GROUP="$2"
+                  shift 2
+                else
+                  if [ "$#" -ne 1 ]
+                  then
+                    echo "Usage: $0 [--group GROUP] DIRECTORY" >&2
+                    exit 1
+                  fi
+                fi
+
+                /usr/local/bin/local-dashboard backupdb --compress "$1"
+
+                if [ -n "$GROUP" ]
+                then
+                  find "$1/pending/survey" "$1/pending/trial" -type f -not -group $GROUP -print0 | xargs -0 -r chown $USER:$GROUP
+                  find "$1/pending/survey" "$1/pending/trial" -type f -not -perm -g=w -print0 | xargs -0 -r chmod g+w
+                fi
+                SCRIPT
+
+                sudo chmod +x /usr/local/bin/local-dashboard-backupdb
+
                 cat <<'SCRIPT' | sudo tee /usr/local/bin/ndt7-backup > /dev/null
                 #!/bin/sh
 
-                if [ "$#" -ne 1 ]
+                if [ "$1" = --group ]
                 then
-                  echo "Usage: $0 path"
-                  exit 1
+                  if [ "$#" -ne 3 ]
+                  then
+                    echo "Usage: $0 [--group GROUP] DIRECTORY" >&2
+                    exit 1
+                  fi
+                  GROUP="$2"
+                  shift 2
+                else
+                  if [ "$#" -ne 1 ]
+                  then
+                    echo "Usage: $0 [--group GROUP] DIRECTORY" >&2
+                    exit 1
+                  fi
                 fi
 
                 SOURCE=/usr/local/lib/ndt-server/datadir/ndt7/
@@ -430,19 +472,32 @@ class Management(Local):
 
                 if [ ! -d "$TARGET" ]
                 then
-                  echo "no such directory: $TARGET"
+                  echo "no such directory: $TARGET" >&2
                   exit 1
                 fi
 
-                find "$SOURCE" -type f -print0 | xargs -0 -r mv -t "$TARGET"
-                find "$SOURCE"/* -type d -empty -delete
+                if [ -n "$GROUP" ]
+                then
+                  # correct ownership & permissions
+                  find "$SOURCE" -type f -print0 | xargs -0 -r chown $USER:$GROUP
+                  find "$SOURCE" -type f -group $GROUP -print0 | xargs -0 -r chmod g+w
+
+                  # move into place
+                  find "$SOURCE" -type f -group $GROUP -print0 | xargs -0 -r mv -t "$TARGET"
+                else
+                  # move into place
+                  find "$SOURCE" -type f -print0 | xargs -0 -r mv -t "$TARGET"
+                fi
+
+                # clean up source
+                find "$SOURCE" -mindepth 1 -type d -empty -delete
                 SCRIPT
 
                 sudo chmod +x /usr/local/bin/ndt7-backup
 
                 cat <<'CRONTAB' | sudo tee /etc/cron.d/nm-exp-local-dashboard > /dev/null
-                @midnight  netrics  sudo /usr/local/bin/local-dashboard backupdb --compress /var/nm/nm-exp-local-dashboard/upload/
-                @midnight  netrics  sudo /usr/local/bin/ndt7-backup /var/nm/nm-exp-local-dashboard/upload/
+                @midnight  root  /usr/local/bin/local-dashboard-backupdb --group netrics /var/nm/nm-exp-local-dashboard/upload/
+                @midnight  root  /usr/local/bin/ndt7-backup --group netrics /var/nm/nm-exp-local-dashboard/upload/
                 CRONTAB
 
                 for directory in /var/nm/nm-exp-local-dashboard/upload/pending/survey/csv/ \
@@ -453,6 +508,7 @@ class Management(Local):
                                  /var/nm/nm-exp-local-dashboard/upload/archive/ndt7/json/
                 do
                     sudo mkdir -p $directory
+                    sudo chmod g+ws $directory
                     sudo chown netrics:netrics $directory
                 done
             '''
