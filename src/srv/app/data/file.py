@@ -86,7 +86,10 @@ class DataFileBank:
                 paths_counted = enumerate(paths_sorted, 1 + path_count)
                 continue
 
-            full_data = self.get_json(path)
+            try:
+                full_data = self.get_json(path)
+            except json.JSONDecodeError:
+                continue
 
             if self.prefix:
                 try:
