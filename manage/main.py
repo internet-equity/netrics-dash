@@ -74,7 +74,7 @@ def stream_requirements(file_path):
             yield spec
 
 
-REPO_PATH = pathlib.Path(__file__).absolute().parent
+REPO_PATH = pathlib.Path(__file__).absolute().parent.parent
 
 EXTENSION_PATH = REPO_PATH / 'src' / 'ext'
 
