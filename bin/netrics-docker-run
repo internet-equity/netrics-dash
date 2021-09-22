@@ -1,9 +1,15 @@
 #!/bin/bash
 
+#
+# ensure dependencies on rpi
+#
 sudo apt-get install -y docker.io
 sudo modprobe tcp_bbr
 
 
+#
+# set up ndt-server
+#
 if [ ! -f /usr/local/bin/ndt-generate-local-test-certs ]; then
   sudo curl \
     -o /usr/local/bin/ndt-generate-local-test-certs \
@@ -53,7 +59,9 @@ if [ ! -f /usr/local/lib/ndt-server/certs/cert.pem ]; then
     -ndt7_addr_cleartext :8888
 fi
 
-
+#
+# set up dashboard
+#
 if [ ! -e /var/lib/netrics-dashboard ]; then
   sudo mkdir -p /var/lib/netrics-dashboard
   sudo chown root:$(id -g) /var/lib/netrics-dashboard
@@ -88,20 +96,22 @@ if [ ! -f /var/run/netrics-dashboard/version ] || [ "$(</var/run/netrics-dashboa
     | xargs echo netrics-dashboard:
 fi
 
-
+#
+# set up data backups
+#
 cat <<'SCRIPT' | sudo tee /usr/local/bin/local-dashboard > /dev/null
 #!/bin/sh
 docker run                                                                                 \
-    --rm                                                                                   \
-    --network=bridge                                                                       \
-    --env-file /etc/nm-exp-active-netrics/.env                                             \
-    --volume /var/lib/netrics-dashboard:/var/lib/dashboard                                 \
-    --volume /var/nm:/var/nm:rw                                                            \
-    --read-only                                                                            \
-    --user $(id -u):$(id -g)                                                               \
-    --name netrics-dashboard-command                                                       \
-    chicagocdac/netrics-dashboard:0.4.2                           \
-    python -m app.cmd "$@"
+  --rm                                                                                   \
+  --network=bridge                                                                       \
+  --env-file /etc/nm-exp-active-netrics/.env                                             \
+  --volume /var/lib/netrics-dashboard:/var/lib/dashboard                                 \
+  --volume /var/nm:/var/nm:rw                                                            \
+  --read-only                                                                            \
+  --user $(id -u):$(id -g)                                                               \
+  --name netrics-dashboard-command                                                       \
+  chicagocdac/netrics-dashboard:0.4.2                           \
+  python -m app.cmd "$@"
 SCRIPT
 
 sudo chmod +x /usr/local/bin/local-dashboard
@@ -118,12 +128,10 @@ then
   fi
   GROUP="$2"
   shift 2
-else
-  if [ "$#" -ne 1 ]
-  then
-    echo "Usage: $0 [--group GROUP] DIRECTORY" >&2
-    exit 1
-  fi
+elif [ "$#" -ne 1 ]
+then
+  echo "Usage: $0 [--group GROUP] DIRECTORY" >&2
+  exit 1
 fi
 
 /usr/local/bin/local-dashboard backupdb --compress "$1"
@@ -149,12 +157,10 @@ then
   fi
   GROUP="$2"
   shift 2
-else
-  if [ "$#" -ne 1 ]
-  then
-    echo "Usage: $0 [--group GROUP] DIRECTORY" >&2
-    exit 1
-  fi
+elif [ "$#" -ne 1 ]
+then
+  echo "Usage: $0 [--group GROUP] DIRECTORY" >&2
+  exit 1
 fi
 
 SOURCE=/usr/local/lib/ndt-server/datadir/ndt7/
@@ -197,7 +203,8 @@ for directory in /var/nm/nm-exp-local-dashboard/upload/pending/survey/csv/ \
                  /var/nm/nm-exp-local-dashboard/upload/pending/ndt7/json/ \
                  /var/nm/nm-exp-local-dashboard/upload/archive/ndt7/json/
 do
-    sudo mkdir -p $directory
-    sudo chmod g+ws $directory
-    sudo chown netrics:netrics $directory
+  sudo mkdir -p $directory
+  sudo chmod g+ws $directory
+  sudo chown netrics:netrics $directory
 done
+
