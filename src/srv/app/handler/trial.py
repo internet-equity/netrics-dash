@@ -6,7 +6,7 @@ from bottle import abort, get, post, put, request, response
 from app.data.db import sqlite as db
 
 
-TRIAL_REPORTING_TIMEOUT = 60
+TRIAL_REPORTING_TIMEOUT = 30
 
 ACTIVE_TRIAL_CONDITION = """\
 size is null and period is null and (strftime('%s', 'now') - ts < ?)\
