@@ -233,19 +233,32 @@ function async_load_plots () {
 
 
 function update_trial_stats (wifi_trial, isp_dl) {
-  if (Number.isInteger(wifi_trial.total_count) && wifi_trial.total_count > 2) {
-    const mbaud = (wifi_trial.stat_mean * 8 / 1e06).toFixed(1),
-          [op, desc, label] = ndt7view.compare_speeds(mbaud, isp_dl),
-          info = document.getElementById('wifi-info');
+  if (! Number.isInteger(wifi_trial.total_count) || wifi_trial.total_count < 3) return;
 
-    info.innerHTML = `Your Web browser(s) have conducted ${wifi_trial.total_count} download tests of your home network. `;
-    info.innerHTML += (wifi_trial.total_count === wifi_trial.stat_count) ? 'Over these, ' : `In the bulk of these — ${wifi_trial.stat_count} tests — `;
-    info.innerHTML += `your network bandwidth averaged ${mbaud} megabits per second. So, your home network bandwidth is usually ${op} that of the connection from your ISP: that's ${desc}.`;
+  const success_rate = wifi_trial.success_count === null ? null : (100 * wifi_trial.success_count / wifi_trial.total_count).toFixed(0),
+        failure_rate = success_rate === null ? null : 100 - success_rate,
+        failure_count = wifi_trial.success_count === null ? null : wifi_trial.total_count - wifi_trial.success_count,
+        rate_stable = wifi_trial.stat_stdev < 0.15 * wifi_trial.last_rate,
+        mbaud = (wifi_trial.stat_mean_win * 8 / 1e06).toFixed(0),
+        [op, desc, label] = ndt7view.compare_speeds(mbaud, isp_dl),
+        info = $('#wifi-info');
 
-    document.querySelectorAll('.wifi-stats').forEach(elem => {
-        elem.style.display = 'initial';
-    });
+  info.empty();  // clear any previous contents
+
+  info.append(`<p>Your Web browser(s) have conducted ${wifi_trial.total_count} download tests of your home network.</p>`);
+
+  if (rate_stable) {
+      win_text = "Your network bandwidth was stable over these tests";
+      win_text += (wifi_trial.total_count === wifi_trial.stat_count_win) ? " and" : `. In the bulk of these &ndash; ${wifi_trial.stat_count_win} tests &ndash; your network bandwidth`;
+      win_text += ` <em>averaged</em> ${mbaud} megabits per second. This average is ${op} that of the connection from your ISP: that's ${desc}.`;
+      info.append(`<p>${win_text}</p>`);
+  } else if (success_rate !== null) {
+      info.append(`<p>In ${wifi_trial.success_count} of these tests (${success_rate}%), the bandwidth of your network exceeded the most recent bandwidth of your connection to the Internet. In ${failure_count} of these tests (${failure_rate}%), your network &ndash; (probably your Wi-Fi) &ndash; might have been the bottleneck of your Internet speed.</p>`);
   }
+
+  document.querySelectorAll('.wifi-stats').forEach(elem => {
+      elem.style.display = 'initial';
+  });
 }
 
 function async_load_trials () {
