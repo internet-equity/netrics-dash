@@ -1,9 +1,11 @@
 import re
 import sqlite3
+import statistics
 
 from bottle import abort, get, post, put, request, response
 
 from app.data.db import sqlite as db
+from app.data.file import DataFileBank, Last
 
 
 TRIAL_REPORTING_TIMEOUT = 30
@@ -107,9 +109,11 @@ def stat_trials():
             where size is not null and period is not null
         """).fetchone()
 
-        where = "where bucket between 2 and 9" if total_count > 8 else ""
+        win_where = "where bucket between 2 and 9" if total_count > 8 else ""
 
-        (stat_mean, stat_count) = conn.execute(f"""\
+        # trial stores size as bytes and period as microseconds
+        # we'll map to a rate of bytes/second
+        (stat_mean_win, stat_count_win) = conn.execute(f"""\
             select avg(rate),
                    count(1)
 
@@ -123,13 +127,38 @@ def stat_trials():
                 )
             )
 
-            {where}
+            {win_where}
         """).fetchone()
+
+        # sqlite doesn't have a built-in stdev function; so we'll load ~all rates for stdev.
+        cursor = conn.execute("""
+            select 1000000.0 * size / period from trial
+            where size is not null and period is not null
+            order by ts desc
+            limit 1000
+        """)
+        all_rates = [row[0] for row in cursor]
+
+        success_count = None
+
+        if total_count > 0:
+            file_bank = DataFileBank(flat=True)
+            ookla_dl = file_bank.get_points(Last('ookla.speedtest_ookla_download'))
+
+            if ookla_dl is not None:
+                cursor = conn.execute("""
+                    select count(1) from trial
+                    where size is not null and period is not null and 8.0 * size / period > ?
+                """, (ookla_dl,))
+                (success_count,) = cursor.fetchone()
 
     return {
         'total_count': total_count,
-        'stat_count': stat_count,
-        'stat_mean': stat_mean,
+        'stat_count_win': stat_count_win,
+        'stat_mean_win': stat_mean_win,
+        'stat_stdev': statistics.stdev(all_rates) if len(all_rates) > 1 else None,
+        'last_rate': all_rates[0] if all_rates else None,
+        'success_count': success_count,
     }
 
 
