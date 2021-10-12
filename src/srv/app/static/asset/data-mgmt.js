@@ -100,23 +100,32 @@ const subjective = {
 };
 
 
-function toggle (a, target) {
-  expand = (a.innerHTML[0] == "+")
-  txt = a.innerHTML
-  txt = txt.substr(1, txt.length)
-
-  more = document.getElementById(target)
+function toggle () {
+  const target = this.dataset.toggle,
+        more = document.getElementById(target),
+        html = this.innerHTML,
+        expand = (html[0] == "+"),
+        txt = html.substr(1, html.length);
 
   if (expand) {
-    a.innerHTML = "- " + txt
+    this.innerHTML = "- " + txt
     // more.style.display = 'block'
     more.style.maxHeight = more.scrollHeight + "px";
   } else {
-    a.innerHTML = "+ " + txt
+    this.innerHTML = "+ " + txt
     // more.style.display = 'none'
     more.style.maxHeight = null;
-
   }
+}
+
+function init_toggle () {
+  $('[data-toggle]:not([data-toggle-defer])').click(toggle);
+}
+
+function init_toggle_deferred (tag) {
+  $(`[data-toggle][data-toggle-defer=${tag}]`)
+  .click(toggle)
+  .addClass('toggle-button-loaded');
 }
 
 
@@ -228,7 +237,8 @@ function async_load_plots () {
         return [name, fixed]
       })
     ))
-    .done(make_plots)
+    .then(make_plots)
+    .then(() => init_toggle_deferred('plots'));
 }
 
 
@@ -378,3 +388,5 @@ Promise.all([
 });
 
 async_load_plots();
+
+init_toggle();

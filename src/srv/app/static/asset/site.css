@@ -120,8 +120,15 @@ ul.dropdown-menu>li {
   font-size: 18px;
 }
 
-.toggle_button {
+.toggle-button {
   cursor: pointer;
+}
+
+.toggle-button-deferred {
+  display: none;
+}
+.toggle-button-loaded {
+  display: initial;
 }
 
 .extras {
