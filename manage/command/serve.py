@@ -19,7 +19,10 @@ class Serve(lib.DockerCommand):
                             help="do NOT mount the host filesystem's under-development "
                                  "repository tree (src/) into the container and "
                                  "do NOT configure server to autoreload source")
-        parser.add_argument('--upload', type=pathlib.Path,
+        parser.add_argument('--profile', action='store_true',
+                            help="enable the request-profiling middleware "
+                                 "(reports printed to the server's stdout)")
+        parser.add_argument('--upload', metavar='PATH', type=pathlib.Path,
                             help="local path to mounted data upload directory")
 
     def prepare(self, args):
@@ -44,6 +47,9 @@ class Serve(lib.DockerCommand):
         else:
             print('warning: dashboard will not operate correctly without environment values')
             print(f'tip: scp {config.NETRICS_HOST}:/etc/nm-exp-active-netrics/.env .')
+
+        if args.profile:
+            run_command = run_command['--env', 'APP_PROFILE=1']
 
         if args.serve_dev:
             yield self.local['mkdir']['-p', config.REPO_PATH / '.var']

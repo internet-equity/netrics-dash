@@ -6,7 +6,8 @@ import bottle
 import whitenoise
 from decouple import config
 
-from app import handler, middleware
+from app import handler
+from app.middleware.response_header import ResponseHeaderMiddleware
 
 
 APP_PATH = pathlib.Path(__file__).absolute().parent
@@ -41,11 +42,15 @@ def main():
 
     version_headers = () if app_version is None else [('Software-Version', app_version)]
 
-    app = middleware.ResponseHeaderMiddleware(
+    app = ResponseHeaderMiddleware(
         whitenoise_app,
         *version_headers,
         Software='netrics-dashboard',
     )
+
+    if config('APP_PROFILE', default=False, cast=bool):
+        from app.middleware.profiler import ProfilerMiddleware
+        app = ProfilerMiddleware(app)
 
     bottle.run(
         app,
