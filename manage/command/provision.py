@@ -27,6 +27,11 @@ class Provision(lib.LocalPiCommand):
             default='latest',
             help="version of dashboard image to provision (default: %(default)s)",
         )
+        parser.add_argument(
+            '--with-profiling',
+            action='store_true',
+            help="enable the request-profiling middleware (reports printed to the server's stdout)",
+        )
 
     def render_script(self):
         return lib.Template.render(
@@ -36,6 +41,7 @@ class Provision(lib.LocalPiCommand):
             version=self.args.version,
             ndt_server_origin=config.NDT_SERVER_ORIGIN,
             ndt_server_tag=config.NDT_SERVER_TAG,
+            dashboard_run_extra='--env APP_PROFILE=1' if self.args.with_profiling else '',
         )
 
     def prepare(self, args):
