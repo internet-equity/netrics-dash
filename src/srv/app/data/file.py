@@ -1,13 +1,19 @@
 """Interface to read operations on sets of Netrics data files."""
 import abc
 import collections
+import contextlib
 import functools
 import heapq
 import json
 import numbers
 import pathlib
 import statistics
+import threading
 import time
+
+import cachetools
+from cachetools import TTLCache
+from loguru import logger as log
 
 from app import config
 
@@ -32,6 +38,35 @@ DATAFILE_LIMIT = DATA_CACHE_SIZE = 5_000
 DATAFILE_PREFIX = 'Measurements'
 
 META_PREFIX = 'Meta'
+
+
+def cached(cache, key=cachetools.hashkey, lock=None):
+    """Extend cachetools.cached to decorate wrapper with useful
+    properties & methods.
+
+    """
+    decorator = cachetools.cached(cache, key, lock)
+
+    def wrapped_decorator(func):
+        def populate(*args, **kwargs):
+            cache_key = key(*args, **kwargs)
+            value = func(*args, **kwargs)
+
+            with lock or contextlib.nullcontext():
+                cache[cache_key] = value
+
+            return value
+
+        wrapped = decorator(func)
+
+        wrapped.cache = cache
+        wrapped.key = key
+        wrapped.lock = lock
+        wrapped.populate = populate
+
+        return wrapped
+
+    return wrapped_decorator
 
 
 def get_multikey(multikey, values):
@@ -82,7 +117,7 @@ class DataFileBank:
                     break
 
                 path_remainder = self.file_limit - path_count
-                paths_sorted = heapq.nlargest(path_remainder, path_dir.iterdir())
+                paths_sorted = self.sorted_dir(path_dir, path_remainder)
                 paths_counted = enumerate(paths_sorted, 1 + path_count)
                 continue
 
@@ -143,6 +178,19 @@ class DataFileBank:
 
         return points
 
+    def round_value(self, value):
+        if self.round_to is not None:
+            if isinstance(value, numbers.Number):
+                return round(value, self.round_to)
+            elif isinstance(value, list):
+                return [self.round_value(value0) for value0 in value]
+            elif isinstance(value, tuple):
+                return tuple(self.round_value(value0) for value0 in value)
+            elif isinstance(value, dict):
+                return {key: self.round_value(value0) for (key, value0) in value.items()}
+
+        return value
+
     #
     # In testing against an HTTP endpoint whose query required ~500 files,
     # an LRU cache of the same size added a lag of ~10% to the initial request,
@@ -157,18 +205,54 @@ class DataFileBank:
         with path.open() as fd:
             return json.load(fd)
 
-    def round_value(self, value):
-        if self.round_to is not None:
-            if isinstance(value, numbers.Number):
-                return round(value, self.round_to)
-            elif isinstance(value, list):
-                return [self.round_value(value0) for value0 in value]
-            elif isinstance(value, tuple):
-                return tuple(self.round_value(value0) for value0 in value)
-            elif isinstance(value, dict):
-                return {key: self.round_value(value0) for (key, value0) in value.items()}
+    #
+    # As size of file archive grows and grows, becomes increasingly important to
+    # cache its sorted listing as well.
+    #
+    # Unlike JSON payloads, the file listing is *mutable*; therefore, cache
+    # items must expire over time.
+    #
+    # TTL cache on full argument list should be sufficient for now -- (arguments
+    # stable across all typical invocations).
+    #
+    @staticmethod
+    @cached(TTLCache(maxsize=100, ttl=(3600 * 24)), lock=threading.Lock())
+    def sorted_dir(path_dir, limit):
+        return heapq.nlargest(limit, path_dir.iterdir())
 
-        return value
+    @classmethod
+    def populate_caches(cls, file_limit=DATAFILE_LIMIT, dirs=DATA_PATHS):
+        """Pre- and/or re-populate file caches."""
+        log.opt(lazy=True).trace(
+            'initial sizes | dirlists: {dirsize} | jsons: {jsize}',
+            dirsize=lambda: cls.sorted_dir.cache.currsize,
+            jsize=lambda: cls.get_json.cache_info().currsize,
+        )
+
+        path_count = 0
+
+        for path_dir in dirs:
+            # set/reset sorted_dir()
+            paths_sorted = cls.sorted_dir.populate(path_dir, file_limit - path_count)
+
+            # set/reset get_json()
+            for (path_count, path) in enumerate(paths_sorted, 1 + path_count):
+                try:
+                    cls.get_json(path)
+                except json.JSONDecodeError:
+                    pass
+
+            if path_count == file_limit:
+                break
+
+        log.opt(lazy=True).trace(
+            'final sizes | dirlists: {dirsize} | jsons: {jsize}',
+            dirsize=lambda: cls.sorted_dir.cache.currsize,
+            jsize=lambda: cls.get_json.cache_info().currsize,
+        )
+
+
+populate_caches = DataFileBank.populate_caches
 
 
 class FlatFileBank(DataFileBank):

@@ -15,13 +15,19 @@ class Serve(lib.DockerCommand):
                             help="name to apply to local dashboard container (default: %(default)s)")
         parser.add_argument('--version', default='latest',
                             help="version/tag of image to run (default: %(default)s)")
+        parser.add_argument('--log-level',
+                            choices=('trace', 'debug', 'info', 'success',
+                                     'warning', 'error', 'critical'),
+                            default='debug',
+                            help="level of log messages to enable (default: %(default)s)")
+        parser.add_argument('--debug', action='store_true', help="enable the server's debug mode")
+        parser.add_argument('--profile', action='store_true',
+                            help="enable the request-profiling middleware "
+                                 "(reports printed to the server's stdout)")
         parser.add_argument('--no-dev', action='store_false', dest='serve_dev',
                             help="do NOT mount the host filesystem's under-development "
                                  "repository tree (src/) into the container and "
                                  "do NOT configure server to autoreload source")
-        parser.add_argument('--profile', action='store_true',
-                            help="enable the request-profiling middleware "
-                                 "(reports printed to the server's stdout)")
         parser.add_argument('--upload', metavar='PATH', type=pathlib.Path,
                             help="local path to mounted data upload directory")
 
@@ -47,6 +53,11 @@ class Serve(lib.DockerCommand):
         else:
             print('warning: dashboard will not operate correctly without environment values')
             print(f'tip: scp {config.NETRICS_HOST}:/etc/nm-exp-active-netrics/.env .')
+
+        run_command = run_command['--env', 'APP_LOG_LEVEL=' + args.log_level.upper()]
+
+        if args.debug:
+            run_command = run_command['--env', 'APP_DEBUG=1']
 
         if args.profile:
             run_command = run_command['--env', 'APP_PROFILE=1']
