@@ -41,7 +41,6 @@ if [ ! -f /usr/local/lib/ndt-server/certs/cert.pem ]; then
     --detach                                                \
     --restart=always                                        \
     --network=bridge                                        \
-    --log-driver=local                                      \
     --publish 4444:4444                                     \
     --publish 8888:8888                                     \
     --volume /usr/local/lib/ndt-server/certs:/certs:ro      \
@@ -50,7 +49,7 @@ if [ ! -f /usr/local/lib/ndt-server/certs/cert.pem ]; then
     --user $(id -u):$(id -g)                                \
     --cap-drop=all                                          \
     --name ndt7                                             \
-    chicagocdac/ndt-server                                  \
+    chicagocdac/ndt-server                       \
     -cert /certs/cert.pem                                   \
     -key /certs/key.pem                                     \
     -datadir /datadir                                       \
@@ -79,7 +78,6 @@ if [ ! -f /var/run/netrics-dashboard/version ] || [ "$(</var/run/netrics-dashboa
     --detach                                                                               \
     --restart=always                                                                       \
     --network=bridge                                                                       \
-    --log-driver=local                                                                     \
     --publish 80:8080                                                                      \
     --env DATAFILE_PENDING=/var/nm/nm-exp-active-netrics/upload/pending/default/json/      \
     --env DATAFILE_ARCHIVE=/var/nm/nm-exp-active-netrics/upload/archive/default/json/      \
@@ -91,10 +89,10 @@ if [ ! -f /var/run/netrics-dashboard/version ] || [ "$(</var/run/netrics-dashboa
     --name netrics-dashboard                                                               \
     chicagocdac/netrics-dashboard:0.4.3
 
-  sudo docker inspect                                     \
+  sudo docker inspect                                         \
     --format="{{.Config.Labels.appversion}}"              \
-    netrics-dashboard                                     \
-    | sudo tee /var/run/netrics-dashboard/version         \
+    netrics-dashboard                                         \
+    | sudo tee /var/run/netrics-dashboard/version             \
     | xargs echo netrics-dashboard:
 fi
 
@@ -103,7 +101,7 @@ fi
 #
 cat <<'SCRIPT' | sudo tee /usr/local/bin/local-dashboard > /dev/null
 #!/bin/sh
-docker run                                                                               \
+docker run                                                                                 \
   --rm                                                                                   \
   --network=bridge                                                                       \
   --env-file /etc/nm-exp-active-netrics/.env                                             \
@@ -112,7 +110,7 @@ docker run                                                                      
   --read-only                                                                            \
   --user $(id -u):$(id -g)                                                               \
   --name netrics-dashboard-command                                                       \
-  chicagocdac/netrics-dashboard:0.4.3                                                    \
+  chicagocdac/netrics-dashboard:0.4.3                           \
   python -m app.cmd "$@"
 SCRIPT
 

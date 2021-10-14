@@ -41,6 +41,7 @@ if [ ! -f /usr/local/lib/ndt-server/certs/cert.pem ]; then
     --detach                                                \
     --restart=always                                        \
     --network=bridge                                        \
+    --log-driver=local                                      \
     --publish 4444:4444                                     \
     --publish 8888:8888                                     \
     --volume /usr/local/lib/ndt-server/certs:/certs:ro      \
@@ -49,7 +50,7 @@ if [ ! -f /usr/local/lib/ndt-server/certs/cert.pem ]; then
     --user $(id -u):$(id -g)                                \
     --cap-drop=all                                          \
     --name ndt7                                             \
-    %{image_repo}/ndt-server                       \
+    %{image_repo}/ndt-server                                \
     -cert /certs/cert.pem                                   \
     -key /certs/key.pem                                     \
     -datadir /datadir                                       \
@@ -81,6 +82,7 @@ if [ ! -f /var/run/netrics-dashboard/version ] || [ "$(</var/run/netrics-dashboa
     --detach                                                                                     \
     --restart=always                                                                             \
     --network=bridge                                                                             \
+    --log-driver=local                                                                           \
     --publish 80:8080                                                                            \
     %{dashboard_run_extra}                                                                       \
     --env DATAFILE_PENDING=/var/nm/nm-exp-active-netrics/upload/pending/${TOPIC:-default}/json/  \
@@ -93,10 +95,10 @@ if [ ! -f /var/run/netrics-dashboard/version ] || [ "$(</var/run/netrics-dashboa
     --name netrics-dashboard                                                                     \
     %{image_repo}/netrics-dashboard:%{version}
 
-  sudo docker inspect                                         \
+  sudo docker inspect                                     \
     --format="{{.Config.Labels.appversion}}"              \
-    netrics-dashboard                                         \
-    | sudo tee /var/run/netrics-dashboard/version             \
+    netrics-dashboard                                     \
+    | sudo tee /var/run/netrics-dashboard/version         \
     | xargs echo netrics-dashboard:
 fi
 
@@ -105,7 +107,7 @@ fi
 #
 cat <<'SCRIPT' | sudo tee /usr/local/bin/local-dashboard > /dev/null
 #!/bin/sh
-docker run                                                                                 \
+docker run                                                                               \
   --rm                                                                                   \
   --network=bridge                                                                       \
   --env-file /etc/nm-exp-active-netrics/.env                                             \
@@ -114,7 +116,7 @@ docker run                                                                      
   --read-only                                                                            \
   --user $(id -u):$(id -g)                                                               \
   --name netrics-dashboard-command                                                       \
-  %{image_repo}/netrics-dashboard:%{version}                           \
+  %{image_repo}/netrics-dashboard:%{version}                                             \
   python -m app.cmd "$@"
 SCRIPT
 
@@ -204,7 +206,7 @@ for directory in /var/nm/nm-exp-local-dashboard/upload/pending/survey/csv/ \
                  /var/nm/nm-exp-local-dashboard/upload/pending/trial/csv/  \
                  /var/nm/nm-exp-local-dashboard/upload/archive/survey/csv/ \
                  /var/nm/nm-exp-local-dashboard/upload/archive/trial/csv/  \
-                 /var/nm/nm-exp-local-dashboard/upload/pending/ndt7/json/ \
+                 /var/nm/nm-exp-local-dashboard/upload/pending/ndt7/json/  \
                  /var/nm/nm-exp-local-dashboard/upload/archive/ndt7/json/
 do
   sudo mkdir -p $directory
