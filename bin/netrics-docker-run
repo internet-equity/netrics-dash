@@ -3,7 +3,7 @@
 #
 # ensure dependencies on rpi
 #
-sudo apt-get install -y docker.io
+sudo apt-get install -y docker.io python3-toml
 sudo modprobe tcp_bbr
 
 
@@ -41,6 +41,7 @@ if [ ! -f /usr/local/lib/ndt-server/certs/cert.pem ]; then
     --detach                                                \
     --restart=always                                        \
     --network=bridge                                        \
+    --log-driver=local                                      \
     --publish 4444:4444                                     \
     --publish 8888:8888                                     \
     --volume /usr/local/lib/ndt-server/certs:/certs:ro      \
@@ -49,7 +50,7 @@ if [ ! -f /usr/local/lib/ndt-server/certs/cert.pem ]; then
     --user $(id -u):$(id -g)                                \
     --cap-drop=all                                          \
     --name ndt7                                             \
-    chicagocdac/ndt-server                       \
+    chicagocdac/ndt-server                                \
     -cert /certs/cert.pem                                   \
     -key /certs/key.pem                                     \
     -datadir /datadir                                       \
@@ -70,29 +71,34 @@ fi
 
 sudo mkdir -p /var/run/netrics-dashboard
 
-if [ ! -f /var/run/netrics-dashboard/version ] || [ "$(</var/run/netrics-dashboard/version)" != 0.4.3 ]; then
+if [ ! -f /var/run/netrics-dashboard/version ] || [ "$(</var/run/netrics-dashboard/version)" != 0.5.0 ]; then
+  TOPIC=$(</etc/nm-exp-active-netrics/nm-exp-active-netrics.toml \
+          python3 -c "import sys, toml; sys.stdout.write(toml.load(sys.stdin).get('topic', ''))")
+
   sudo docker stop netrics-dashboard &>/dev/null
   sudo docker rm netrics-dashboard &>/dev/null
 
-  sudo docker run                                                                          \
-    --detach                                                                               \
-    --restart=always                                                                       \
-    --network=bridge                                                                       \
-    --publish 80:8080                                                                      \
-    --env DATAFILE_PENDING=/var/nm/nm-exp-active-netrics/upload/pending/default/json/      \
-    --env DATAFILE_ARCHIVE=/var/nm/nm-exp-active-netrics/upload/archive/default/json/      \
-    --env-file /etc/nm-exp-active-netrics/.env                                             \
-    --volume /var/lib/netrics-dashboard:/var/lib/dashboard                                 \
-    --volume /var/nm:/var/nm:ro                                                            \
-    --read-only                                                                            \
-    --user $(id -u):$(id -g)                                                               \
-    --name netrics-dashboard                                                               \
-    chicagocdac/netrics-dashboard:0.4.3
+  sudo docker run                                                                                \
+    --detach                                                                                     \
+    --restart=always                                                                             \
+    --network=bridge                                                                             \
+    --log-driver=local                                                                           \
+    --publish 80:8080                                                                            \
+                                                                           \
+                                                                         \
+    --env DATAFILE_PENDING=/var/nm/nm-exp-active-netrics/upload/pending/${TOPIC:-default}/json/  \
+    --env DATAFILE_ARCHIVE=/var/nm/nm-exp-active-netrics/upload/archive/${TOPIC:-default}/json/  \
+    --volume /var/lib/netrics-dashboard:/var/lib/dashboard                                       \
+    --volume /var/nm:/var/nm:ro                                                                  \
+    --read-only                                                                                  \
+    --user $(id -u):$(id -g)                                                                     \
+    --name netrics-dashboard                                                                     \
+    chicagocdac/netrics-dashboard:0.5.0
 
-  sudo docker inspect                                         \
+  sudo docker inspect                                     \
     --format="{{.Config.Labels.appversion}}"              \
-    netrics-dashboard                                         \
-    | sudo tee /var/run/netrics-dashboard/version             \
+    netrics-dashboard                                     \
+    | sudo tee /var/run/netrics-dashboard/version         \
     | xargs echo netrics-dashboard:
 fi
 
@@ -101,16 +107,16 @@ fi
 #
 cat <<'SCRIPT' | sudo tee /usr/local/bin/local-dashboard > /dev/null
 #!/bin/sh
-docker run                                                                                 \
+docker run                                                                               \
   --rm                                                                                   \
   --network=bridge                                                                       \
-  --env-file /etc/nm-exp-active-netrics/.env                                             \
+                                                                 \
   --volume /var/lib/netrics-dashboard:/var/lib/dashboard                                 \
   --volume /var/nm:/var/nm:rw                                                            \
   --read-only                                                                            \
   --user $(id -u):$(id -g)                                                               \
   --name netrics-dashboard-command                                                       \
-  chicagocdac/netrics-dashboard:0.4.3                           \
+  chicagocdac/netrics-dashboard:0.5.0                                             \
   python -m app.cmd "$@"
 SCRIPT
 
@@ -200,7 +206,7 @@ for directory in /var/nm/nm-exp-local-dashboard/upload/pending/survey/csv/ \
                  /var/nm/nm-exp-local-dashboard/upload/pending/trial/csv/  \
                  /var/nm/nm-exp-local-dashboard/upload/archive/survey/csv/ \
                  /var/nm/nm-exp-local-dashboard/upload/archive/trial/csv/  \
-                 /var/nm/nm-exp-local-dashboard/upload/pending/ndt7/json/ \
+                 /var/nm/nm-exp-local-dashboard/upload/pending/ndt7/json/  \
                  /var/nm/nm-exp-local-dashboard/upload/archive/ndt7/json/
 do
   sudo mkdir -p $directory
