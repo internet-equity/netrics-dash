@@ -1,6 +1,9 @@
 argcmdr==0.7.0
 bottle==0.12.19
+cachetools==4.2.4
 influxdb==5.3.1
+loguru==0.5.3
 python-decouple==3.4
+schedule==1.1.0
 waitress==2.0.0
 whitenoise==5.2.0

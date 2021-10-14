@@ -79,6 +79,7 @@ if [ ! -f /var/run/netrics-dashboard/version ] || [ "$(</var/run/netrics-dashboa
     --restart=always                                                                       \
     --network=bridge                                                                       \
     --publish 80:8080                                                                      \
+    %{dashboard_run_extra}                                                                 \
     --env DATAFILE_PENDING=/var/nm/nm-exp-active-netrics/upload/pending/default/json/      \
     --env DATAFILE_ARCHIVE=/var/nm/nm-exp-active-netrics/upload/archive/default/json/      \
     --env-file /etc/nm-exp-active-netrics/.env                                             \
