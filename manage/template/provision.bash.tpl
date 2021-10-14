@@ -85,9 +85,9 @@ if [ ! -f /var/run/netrics-dashboard/version ] || [ "$(</var/run/netrics-dashboa
     --log-driver=local                                                                           \
     --publish 80:8080                                                                            \
     %{dashboard_run_extra}                                                                       \
+    %{dashboard_run_envfile}                                                                     \
     --env DATAFILE_PENDING=/var/nm/nm-exp-active-netrics/upload/pending/${TOPIC:-default}/json/  \
     --env DATAFILE_ARCHIVE=/var/nm/nm-exp-active-netrics/upload/archive/${TOPIC:-default}/json/  \
-    --env-file /etc/nm-exp-active-netrics/.env                                                   \
     --volume /var/lib/netrics-dashboard:/var/lib/dashboard                                       \
     --volume /var/nm:/var/nm:ro                                                                  \
     --read-only                                                                                  \
@@ -110,7 +110,7 @@ cat <<'SCRIPT' | sudo tee /usr/local/bin/local-dashboard > /dev/null
 docker run                                                                               \
   --rm                                                                                   \
   --network=bridge                                                                       \
-  --env-file /etc/nm-exp-active-netrics/.env                                             \
+  %{dashboard_run_envfile}                                                               \
   --volume /var/lib/netrics-dashboard:/var/lib/dashboard                                 \
   --volume /var/nm:/var/nm:rw                                                            \
   --read-only                                                                            \

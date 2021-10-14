@@ -32,6 +32,11 @@ class Provision(lib.LocalPiCommand):
             action='store_true',
             help="enable the request-profiling middleware (reports printed to the server's stdout)",
         )
+        parser.add_argument(
+            '--with-netrics-envfile',
+            action='store_true',
+            help="supply the netrics envfile to the dashboard run command",
+        )
 
     def render_script(self):
         return lib.Template.render(
@@ -42,6 +47,7 @@ class Provision(lib.LocalPiCommand):
             ndt_server_origin=config.NDT_SERVER_ORIGIN,
             ndt_server_tag=config.NDT_SERVER_TAG,
             dashboard_run_extra='--env APP_PROFILE=1' if self.args.with_profiling else '',
+            dashboard_run_envfile='--env-file /etc/nm-exp-active-netrics/.env' if self.args.with_netrics_envfile else '',
         )
 
     def prepare(self, args):
