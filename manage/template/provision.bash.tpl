@@ -71,23 +71,26 @@ fi
 sudo mkdir -p /var/run/netrics-dashboard
 
 if [ ! -f /var/run/netrics-dashboard/version ] || [ "$(</var/run/netrics-dashboard/version)" != %{version} ]; then
+  TOPIC=$(</etc/nm-exp-active-netrics/nm-exp-active-netrics.toml \
+          python3 -c "import sys, toml; sys.stdout.write(toml.load(sys.stdin).get('topic', ''))")
+
   sudo docker stop netrics-dashboard &>/dev/null
   sudo docker rm netrics-dashboard &>/dev/null
 
-  sudo docker run                                                                          \
-    --detach                                                                               \
-    --restart=always                                                                       \
-    --network=bridge                                                                       \
-    --publish 80:8080                                                                      \
-    %{dashboard_run_extra}                                                                 \
-    --env DATAFILE_PENDING=/var/nm/nm-exp-active-netrics/upload/pending/default/json/      \
-    --env DATAFILE_ARCHIVE=/var/nm/nm-exp-active-netrics/upload/archive/default/json/      \
-    --env-file /etc/nm-exp-active-netrics/.env                                             \
-    --volume /var/lib/netrics-dashboard:/var/lib/dashboard                                 \
-    --volume /var/nm:/var/nm:ro                                                            \
-    --read-only                                                                            \
-    --user $(id -u):$(id -g)                                                               \
-    --name netrics-dashboard                                                               \
+  sudo docker run                                                                                \
+    --detach                                                                                     \
+    --restart=always                                                                             \
+    --network=bridge                                                                             \
+    --publish 80:8080                                                                            \
+    %{dashboard_run_extra}                                                                       \
+    --env DATAFILE_PENDING=/var/nm/nm-exp-active-netrics/upload/pending/${TOPIC:-default}/json/  \
+    --env DATAFILE_ARCHIVE=/var/nm/nm-exp-active-netrics/upload/archive/${TOPIC:-default}/json/  \
+    --env-file /etc/nm-exp-active-netrics/.env                                                   \
+    --volume /var/lib/netrics-dashboard:/var/lib/dashboard                                       \
+    --volume /var/nm:/var/nm:ro                                                                  \
+    --read-only                                                                                  \
+    --user $(id -u):$(id -g)                                                                     \
+    --name netrics-dashboard                                                                     \
     %{image_repo}/netrics-dashboard:%{version}
 
   sudo docker inspect                                         \
