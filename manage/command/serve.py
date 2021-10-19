@@ -28,6 +28,9 @@ class Serve(lib.DockerCommand):
                             help="do NOT mount the host filesystem's under-development "
                                  "repository tree (src/) into the container and "
                                  "do NOT configure server to autoreload source")
+        parser.add_argument('--topic', default='beta',
+                            help='netrics "topic" under which measurement data '
+                                 'are written (default: %(default)s)')
         parser.add_argument('--upload', metavar='PATH', type=pathlib.Path,
                             help="local path to mounted data upload directory")
 
@@ -73,8 +76,8 @@ class Serve(lib.DockerCommand):
 
         if args.upload:
             run_command = run_command[
-                '--env', 'DATAFILE_PENDING=/var/nm/nm-exp-active-netrics/upload/pending/default/json/',
-                '--env', 'DATAFILE_ARCHIVE=/var/nm/nm-exp-active-netrics/upload/archive/default/json/',
+                '--env', f'DATAFILE_PENDING=/var/nm/nm-exp-active-netrics/upload/pending/{args.topic}/json/',
+                '--env', f'DATAFILE_ARCHIVE=/var/nm/nm-exp-active-netrics/upload/archive/{args.topic}/json/',
                 '--volume', f'{args.upload}:/var/nm',
             ]
 
