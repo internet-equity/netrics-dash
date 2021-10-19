@@ -1,4 +1,5 @@
 """Background task management."""
+import itertools
 import queue as q
 import threading
 import time
@@ -7,11 +8,33 @@ import schedule
 from loguru import logger as log
 
 
+class ThreadEnumerator(dict):
+
+    def sync(self):
+        active_threads = threading.enumerate()
+        dead_threads = self.keys() - set(active_threads)
+        for thread in dead_threads:
+            del self[thread]
+
+    def assign(self, thread):
+        self.sync()
+
+        slots_assigned = set(self.values())
+        for slot in itertools.count(1):
+            if slot not in slots_assigned:
+                self[thread] = slot
+                return slot
+
+
 class TaskThread(threading.Thread):
+
+    enumerator = ThreadEnumerator()
 
     @classmethod
     def launch(cls, *args, **kwargs):
         worker = cls(*args, **kwargs)
+        worker_id = cls.enumerator.assign(worker)
+        worker.name = f'worker-{worker_id}'
         worker.start()
         return worker
 
