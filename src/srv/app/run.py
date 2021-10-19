@@ -12,7 +12,7 @@ import whitenoise
 from decouple import config
 from loguru import logger as log
 
-from app import handler, server, task
+from app import handler, plugin, server, task
 from app.middleware.response_header import ResponseHeaderMiddleware
 
 
@@ -104,8 +104,11 @@ def logging(func):
     def wrapper(*args, **kwargs):
         if not logging.configured:
             logging.configured = True
+
             log_level = config('APP_LOG_LEVEL', default='INFO')
             configure_logging(log_level)
+
+            bottle.install(plugin.RouteErrorLogger)
 
         return func(*args, **kwargs)
 
