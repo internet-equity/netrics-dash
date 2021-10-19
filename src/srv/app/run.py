@@ -108,7 +108,7 @@ def logging(func):
             log_level = config('APP_LOG_LEVEL', default='INFO')
             configure_logging(log_level)
 
-            bottle.install(plugin.RouteErrorLogger)
+            bottle.install(plugin.RouteErrorLogger())
 
         return func(*args, **kwargs)
 
