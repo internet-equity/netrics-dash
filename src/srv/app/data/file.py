@@ -268,7 +268,7 @@ class FlatFileBank(DataFileBank):
             Multi(read_key, age_s, decorate=decorate, reverse=reverse)
         )
 
-        if points is None:
+        if not points:
             count = 1 if isinstance(read_key, str) else len(read_key)
             if decorate:
                 count += 1 if isinstance(decorate, str) else len(decorate)
