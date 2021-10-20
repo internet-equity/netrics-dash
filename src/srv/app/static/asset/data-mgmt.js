@@ -248,7 +248,7 @@ function update_trial_stats (wifi_trial, isp_dl) {
   const success_rate = wifi_trial.success_count === null ? null : (100 * wifi_trial.success_count / wifi_trial.total_count).toFixed(0),
         failure_rate = success_rate === null ? null : 100 - success_rate,
         failure_count = wifi_trial.success_count === null ? null : wifi_trial.total_count - wifi_trial.success_count,
-        rate_stable = wifi_trial.stat_stdev < 0.15 * wifi_trial.last_rate,
+        rate_stable = wifi_trial.stat_stdev < 0.15 * wifi_trial.recent_rates[0].speed,
         mbaud = (wifi_trial.stat_mean_win * 8 / 1e06).toFixed(0),
         [op, desc, label] = ndt7view.compare_speeds(mbaud, isp_dl),
         info = $('#wifi-info');
