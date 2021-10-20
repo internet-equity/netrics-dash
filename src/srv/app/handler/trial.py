@@ -114,6 +114,10 @@ def list_trials():
 
 @get('/dashboard/trial/stats')
 def stat_trials():
+    recent_limit = 5 if (limit_value := clean_limit()) is None else limit_value
+    if not 0 <= recent_limit <= 1000:
+        abort(400, 'Bad request')
+
     with db.client.connect() as conn:
         (total_count,) = conn.execute(f"""\
             select count(1) from trial
@@ -143,12 +147,17 @@ def stat_trials():
 
         # sqlite doesn't have a built-in stdev function; so we'll load ~all rates for stdev.
         cursor = conn.execute(f"""
-            select 1000000.0 * size / period from trial
+            select ts, 1000000.0 * size / period as speed from trial
             where {COMPLETE_TRIAL_CONDITION}
             order by ts desc
             limit 1000
         """)
-        all_rates = [row[0] for row in cursor]
+        names = [column[0] for column in cursor.description]
+        history = [
+            dict(zip(names, row))
+            for row in cursor
+        ]
+        all_rates = [row['speed'] for row in history]
 
         success_count = None
 
@@ -168,7 +177,7 @@ def stat_trials():
         'stat_count_win': stat_count_win,
         'stat_mean_win': stat_mean_win,
         'stat_stdev': statistics.stdev(all_rates) if len(all_rates) > 1 else None,
-        'last_rate': all_rates[0] if all_rates else None,
+        'recent_rates': history[:recent_limit],
         'success_count': success_count,
     }
 
