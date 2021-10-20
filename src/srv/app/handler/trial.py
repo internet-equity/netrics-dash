@@ -18,18 +18,22 @@ RECENT_TRIAL_CONDITION = """\
 size is not null and period is not null and (strftime('%s', 'now') - ts < ?)\
 """
 
+COMPLETE_TRIAL_CONDITION = """\
+size is not null and period is not null\
+"""
+
 CAST_TRUE = {'1', 'true', 'on'}
 CAST_FALSE = {'0', 'false', 'off', ''}
 CAST_VALUES = CAST_TRUE | CAST_FALSE
 
 
-def clean_active():
-    active_arg = request.query.active.lower()
+def clean_flag(flag):
+    flag_arg = getattr(request.query, flag).lower()
 
-    if active_arg not in CAST_VALUES:
+    if flag_arg not in CAST_VALUES:
         abort(400, 'Bad request')
 
-    return active_arg in CAST_TRUE
+    return flag_arg in CAST_TRUE
 
 
 def clean_period():
@@ -67,7 +71,7 @@ def build_where_clause():
     where = ''
     args = []
 
-    if clean_active():
+    if clean_flag('active'):
         where = f'where ({ACTIVE_TRIAL_CONDITION})'
         args.append(TRIAL_REPORTING_TIMEOUT)
 
@@ -75,6 +79,13 @@ def build_where_clause():
         where += ' or ' if where else 'where '
         where += f'({RECENT_TRIAL_CONDITION})'
         args.append(period)
+
+    if clean_flag('complete'):
+        if period:
+            abort(400, 'Bad request')
+
+        where += ' or ' if where else 'where '
+        where += f'({COMPLETE_TRIAL_CONDITION})'
 
     return (where, args)
 
@@ -104,9 +115,9 @@ def list_trials():
 @get('/dashboard/trial/stats')
 def stat_trials():
     with db.client.connect() as conn:
-        (total_count,) = conn.execute("""\
+        (total_count,) = conn.execute(f"""\
             select count(1) from trial
-            where size is not null and period is not null
+            where {COMPLETE_TRIAL_CONDITION}
         """).fetchone()
 
         win_where = "where bucket between 2 and 9" if total_count > 8 else ""
@@ -123,7 +134,7 @@ def stat_trials():
 
                 from (
                     select 1000000.0 * size / period as rate from trial
-                    where size is not null and period is not null
+                    where {COMPLETE_TRIAL_CONDITION}
                 )
             )
 
@@ -131,9 +142,9 @@ def stat_trials():
         """).fetchone()
 
         # sqlite doesn't have a built-in stdev function; so we'll load ~all rates for stdev.
-        cursor = conn.execute("""
+        cursor = conn.execute(f"""
             select 1000000.0 * size / period from trial
-            where size is not null and period is not null
+            where {COMPLETE_TRIAL_CONDITION}
             order by ts desc
             limit 1000
         """)
@@ -146,9 +157,9 @@ def stat_trials():
             ookla_dl = file_bank.get_points(Last('ookla.speedtest_ookla_download'))
 
             if ookla_dl is not None:
-                cursor = conn.execute("""
+                cursor = conn.execute(f"""
                     select count(1) from trial
-                    where size is not null and period is not null and 8.0 * size / period > ?
+                    where {COMPLETE_TRIAL_CONDITION} and 8.0 * size / period > ?
                 """, (ookla_dl,))
                 (success_count,) = cursor.fetchone()
 
