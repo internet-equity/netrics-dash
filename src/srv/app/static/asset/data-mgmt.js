@@ -215,6 +215,78 @@ function make_plots (data) {
 }
 
 
+function make_trial_plots (trials, totalCount, isp_dl) {
+  // for date series:
+  // trials.map(point => new Date(point.ts * 1000))  // timestamp => date
+  //
+  // for trial number (range stepping backwards from totalCount):
+  const trialNumbers = Array.from({length: trials.length}, (_undef, index) => totalCount - index)
+
+  // bandwidths
+  const bandwidths = trials.map(point => point.speed * 8 / 1e06)  // B/s => Mb/s
+
+  // coax last ISP measurement line into legend
+  const ispLine = {
+    color: 'rgb(50, 171, 96)',
+    dash: 'dashdot',
+    width: 5,
+  }
+
+  Plotly.newPlot(
+    // HTML target
+    'wifi_plot',
+
+    // datasets
+    [
+      {
+        name: 'Network',
+        type: 'bar',
+        orientation: 'h',
+        x: bandwidths,
+        y: trialNumbers,
+      },
+      {
+        name: 'ISP',
+        visible: 'legendonly',
+        x: [0],  // dummy
+        y: [0],  // dummy
+        line: ispLine,
+      },
+    ],
+
+    // layout
+    {
+      autosize: true,
+      height: 300,
+      margin: {l: 70, r: 60, b: 50, t: 20, pad: 0},
+      font: {size : 18},
+      showlegend: true,
+      legend: {orientation: 'v', x: 0.05, y: 0.95},
+      xaxis: {title: {text: 'Download Bandwidth [Mbps]'}},
+      yaxis: {dtick: 1, title: {text: 'Network Test #'}},
+
+      // threshold line (isp_dl)
+      shapes: [
+        {
+          type: 'line',
+          yref: 'paper',
+          y0: 0,
+          y1: 1,
+          x0: isp_dl,
+          x1: isp_dl,
+          line: ispLine,
+        },
+      ],
+    },
+
+    // other config
+    {
+      displayModeBar: false,
+    },
+  )
+}
+
+
 function async_load_plots () {
   return $.getJSON('plots')
     // convert timestamp -> Date to ensure formatting
@@ -379,13 +451,21 @@ const extWatcher = {
 if (extWatcher.canInstall()) extWatcher.start();
 
 
-Promise.all([
+compositeTrialStats = Promise.all([
   async_load_data(),
-  async_load_trials()
-]).then(values => {
+  async_load_trials(),
+]);
+
+compositeTrialStats.then(values => {
   const [isp_stats, wifi_trial] = values;
   update_trial_stats(wifi_trial, isp_stats.ookla_dl);
 });
+compositeTrialStats.then(values => {
+  const [isp_stats, wifi_trial] = values;
+  make_trial_plots(wifi_trial.recent_rates, wifi_trial.total_count, isp_stats.ookla_dl);
+  init_toggle_deferred('plots-trials');
+});
+
 
 async_load_plots();
 
