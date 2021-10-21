@@ -114,7 +114,7 @@ def list_trials():
 
 @get('/dashboard/trial/stats')
 def stat_trials():
-    recent_limit = 5 if (limit_value := clean_limit()) is None else limit_value
+    recent_limit = 10 if (limit_value := clean_limit()) is None else limit_value
     if not 0 <= recent_limit <= 1000:
         abort(400, 'Bad request')
 
