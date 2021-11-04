@@ -18,16 +18,24 @@ const ndt7view = {
     );
   },
 
+  TestStatus: {
+    incomplete: 0,
+    complete: 1,
+    busy: 2,
+    error: 3,
+  },
+
   update_values: function (info, tag, complete) {
     if (!info) {
-      if (complete) {
-        const failure = document.getElementById('wifi-failure');
+      if (complete && Number.isFinite(complete) && complete > this.TestStatus.complete) {
+        const identifier = complete === this.TestStatus.busy ? 'wifi-busy' : 'wifi-failure'
+        const errorNode = document.getElementById(identifier)
   
-        failure.classList.remove('d-none');
-        this.post_loading(failure.parentElement);
+        errorNode.classList.remove('d-none')
+        this.post_loading(errorNode.parentElement)
       }
   
-      return;
+      return
     }
   
     const elapsed = info.ElapsedTime / 1e06     /* second */
@@ -97,17 +105,50 @@ const ndt7run = {
     }
   },
 
-  run_download: function (callback) {
-    $.post('trial/?active=on', null, 'json')
-    .done(result => this.runNdt(
+  showFail: function (testName) {
+    console.error('LAN bandwidth test could not be started')
+    ndt7view.update_values(null, testName, ndt7view.TestStatus.error)
+  },
+
+  showBusy: function (testName) {
+    console.info('LAN bandwidth test already running')
+    ndt7view.update_values(null, testName, ndt7view.TestStatus.busy)
+  },
+
+  runDownload: async function (callback) {
+    const trialResult = await $.getJSON('trial/', {limit: '1', active: 'on'})
+    const isOpen = trialResult && trialResult.count === 0
+
+    if (!isOpen) {
+      return false
+    }
+
+    const startResult = await $.post('trial/?active=on', null, 'json')
+
+    this.runNdt(
       'download',
       ndt7view.update_values.bind(ndt7view),
-      this.sendTrial.bind(result.inserted, callback)
-    ))
-    .fail(() => {
-      console.error('LAN bandwidth test could not be started');
-      ndt7view.update_values(null, 'download', true);
-    });
+      this.sendTrial.bind(startResult.inserted, callback)
+    )
+
+    return true
+  },
+
+  run_download: async function (callback) {
+    let testResult
+
+    try {
+      testResult = await this.runDownload(callback)
+    } catch (error) {
+      if (error.hasOwnProperty('status') && error.status === 409) {
+        this.showBusy('download')
+      } else {
+        this.showFail('download')
+      }
+      return
+    }
+
+    if (!testResult) this.showBusy('download')
   },
 
   run_upload: function (callback) {
