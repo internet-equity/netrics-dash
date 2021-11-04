@@ -179,12 +179,16 @@ ul.dropdown-menu>li {
   font-weight: normal;
 }
 
-#survey_box .btn{
- width: 265px;
+@media all and (max-width: 1650px) {
+  .survey_after {
+    font-size: 3vw;
+  }
 }
 
 #survey_box .dropdown-menu {
-  width: 250px;
+  opacity: 0.9;
+  border-radius: 0 0 10px 10px;
+  padding: .375rem .75rem;
 }
 
 #survey_box .btn-primary:hover, #survey_box .btn-primary:focus, #survey_box .btn-primary:active, #survey_box .btn-primary.active, #survey_box .open>.dropdown-toggle.btn-primary {
