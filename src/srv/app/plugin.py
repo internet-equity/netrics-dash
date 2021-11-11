@@ -1,3 +1,4 @@
+import bottle
 from loguru import logger as log
 
 
@@ -8,6 +9,7 @@ class RouteErrorLogger:
 
     def apply(self, callback, route):
         return log.catch(
+            exclude=bottle.HTTPResponse,
             message=f"Error in function {route.callback.__name__}() for {route.method} {route.rule}:",
             reraise=True,
         )(callback)
