@@ -1,21 +1,48 @@
 const ndt7view = {
-  compare_speeds: function (a, b) {
+  Elements: {
+    section: document.getElementById('wifi'),
+    interpTxt: document.getElementById('text_wifi_interp'),
+    interpTxt1: document.getElementById('text_wifi_interp1'),
+    interpTxt2: document.getElementById('text_wifi_interp2'),
+    wifiBw: document.getElementById('wifi_bw'),
+    ooklaDl: document.getElementById('ookla_dl'),
+    errorBusy: document.getElementById('wifi-busy'),
+    errorFailure: document.getElementById('wifi-failure'),
+  },
+
+  compareSpeeds (a, b) {
     if      (a < b * 0.75) {
-      return ['less than', 'bad', 'bad'];
+      return ['less than', 'bad', 'bad']
     } else if (a > b * 1.25) {
-      return ["greater than", "good", "good"];
+      return ['greater than', 'good', 'good']
     } else {
-      return ["similar to", "not great", "ok"];
+      return ['similar to', 'not great', 'ok']
     }
   },
 
-  post_loading: function (elem) {
-    elem.querySelectorAll('.loading').forEach(
-      function (elem) {
-          elem.classList.remove('loading');
-          elem.classList.add('loading-done');
-      }
-    );
+  startUpdate () {
+    this.preLoading()
+    this.clearResults()
+  },
+
+  clearResults () {
+    this.Elements.section.querySelectorAll('.wifi-result').forEach(elem => {
+      elem.classList.add('d-none')
+    })
+  },
+
+  preLoading () {
+    this.Elements.section.querySelectorAll('.loading-done').forEach(elem => {
+      elem.classList.remove('loading-done')
+      elem.classList.add('loading')
+    })
+  },
+
+  postLoading () {
+    this.Elements.section.querySelectorAll('.loading').forEach(elem => {
+      elem.classList.remove('loading')
+      elem.classList.add('loading-done')
+    })
   },
 
   TestStatus: {
@@ -25,143 +52,242 @@ const ndt7view = {
     error: 3,
   },
 
-  update_values: function (info, tag, complete) {
+  updateValues (info, tag, complete) {
     if (!info) {
       if (complete && Number.isFinite(complete) && complete > this.TestStatus.complete) {
-        const identifier = complete === this.TestStatus.busy ? 'wifi-busy' : 'wifi-failure'
-        const errorNode = document.getElementById(identifier)
-  
+        const identifier = complete === this.TestStatus.busy ? 'errorBusy' : 'errorFailure'
+        const errorNode = this.Elements[identifier]
+
         errorNode.classList.remove('d-none')
-        this.post_loading(errorNode.parentElement)
+
+        this.postLoading()
       }
-  
+
       return
     }
-  
+
     const elapsed = info.ElapsedTime / 1e06     /* second */
     let speed = info.NumBytes / elapsed         /* B/s    */
     speed *= 8                                     /* bit/s  */
     speed /= 1e06                                  /* Mbit/s */
     speed = speed.toFixed(1)
-  
-    const el = document.getElementById("wifi_bw"),
-          dl = document.getElementById("ookla_dl"),
-          dl_value = parseFloat(dl.innerHTML);
-  
-    el.innerHTML = speed;
-  
-    const pardiv = el.parentElement
-    pardiv.classList.remove("bad")
-    pardiv.classList.remove("ok")
-    pardiv.classList.remove("good")
-  
-    const [op, desc, label] = this.compare_speeds(speed, dl_value);
-    pardiv.classList.add(label);
-  
+
+    this.Elements.wifiBw.innerHTML = speed;
+
+    const bwGauge = this.Elements.wifiBw.parentElement
+
+    bwGauge.classList.remove('bad')
+    bwGauge.classList.remove('ok')
+    bwGauge.classList.remove('good')
+
+    const dl_value = parseFloat(this.Elements.ooklaDl.innerHTML);
+    const [op, desc, label] = this.compareSpeeds(speed, dl_value);
+
+    bwGauge.classList.add(label);
+
     if (complete) {
-      const txt1 = document.getElementById("text_wifi_interp1")
-      const txt2 = document.getElementById("text_wifi_interp2")
-      const paragraph = txt1.parentElement
-      const section = paragraph.parentElement
-  
-      txt1.innerHTML = op;
-      txt2.innerHTML = desc;
-  
-      paragraph.classList.remove('d-none');
-      this.post_loading(section);
+      this.Elements.interpTxt1.innerHTML = op;
+      this.Elements.interpTxt2.innerHTML = desc;
+
+      this.Elements.interpTxt.classList.remove('d-none');
+
+      this.postLoading();
     }
-  }
-};
+  },
+
+  showFail (testName) {
+    console.error('LAN bandwidth test could not be started')
+    this.updateValues(null, testName, this.TestStatus.error)
+  },
+
+  showBusy (testName) {
+    console.info('LAN bandwidth test already running')
+    this.updateValues(null, testName, this.TestStatus.busy)
+  },
+}
 
 const ndt7run = {
   ndtTestHost: window.location.host,
   ndtAssetPath: '/dashboard/asset/ndt/',
 
-  runNdt: function (testName, viewUpdater, callback) {
+  runNdt (testName, viewUpdater) {
+    let resolvePromise
+
+    const promise = new Promise(resolver => resolvePromise = resolver)
+
     ndt7common.run_ndt({
-      testName: testName,
-      updateValues: viewUpdater,
-      done: callback,
       testHost: this.ndtTestHost,
       assetUrl: this.ndtAssetPath,
-    });
+      testName: testName,
+      updateValues: viewUpdater,
+      done: (...args) => resolvePromise(args),
+    })
+
+    return promise
   },
 
-  sendTrial: function (callback, measurement, testName) {
-    if (measurement && Number.isInteger(this.ts)) {
-      $.ajax(`trial/${this.ts}`, {
-        method: 'PUT',
-        data: {
-          size: measurement.NumBytes,
-          period: measurement.ElapsedTime.toFixed()
-        }
-      });
-    } else {
-      console.error('bad trial object %o or results %o', this, measurement);
-    }
-  
-    if (callback !== undefined) {
-      callback(measurement, testName);
-    }
-  },
-
-  showFail: function (testName) {
-    console.error('LAN bandwidth test could not be started')
-    ndt7view.update_values(null, testName, ndt7view.TestStatus.error)
-  },
-
-  showBusy: function (testName) {
-    console.info('LAN bandwidth test already running')
-    ndt7view.update_values(null, testName, ndt7view.TestStatus.busy)
-  },
-
-  runDownload: async function (callback) {
+  async slotIsOpen () {
     const trialResult = await $.getJSON('trial/', {limit: '1', active: 'on'})
-    const isOpen = trialResult && trialResult.count === 0
+    return trialResult && trialResult.count === 0
+  },
 
-    if (!isOpen) {
-      return false
+  async sendTrial (trial, measurement) {
+    if (! measurement || ! Number.isInteger(trial.ts)) {
+      console.error('bad trial object %o or results %o', trial, measurement)
+      throw TypeError('bad trial object or results')
     }
 
-    const startResult = await $.post('trial/?active=on', null, 'json')
+    return await $.ajax(`trial/${trial.ts}`, {
+      method: 'PUT',
+      data: {
+        size: measurement.NumBytes,
+        period: measurement.ElapsedTime.toFixed()
+      }
+    })
+  },
 
-    this.runNdt(
+  broadcastRun (measurement, testName) {
+    const runEvent = new CustomEvent('ndt7run', {
+      detail: {
+        measurement: measurement,
+        name: testName,
+      }
+    })
+
+    dispatchEvent(runEvent)
+  },
+
+  broadcastUpdate (trial, measurement, testName) {
+    const updateEvent = new CustomEvent('ndt7update', {
+      detail: {
+        measurement: measurement,
+        name: testName,
+        trial: trial,
+      }
+    })
+
+    dispatchEvent(updateEvent)
+  },
+
+  async runDownload () {
+    const startResult = await $.post('trial/?active=on', null, 'json')
+    const trial = startResult.inserted
+
+    ndt7view.startUpdate()
+
+    const [measurement, testName] = await this.runNdt(
       'download',
-      ndt7view.update_values.bind(ndt7view),
-      this.sendTrial.bind(startResult.inserted, callback)
+      ndt7view.updateValues.bind(ndt7view),
     )
 
-    return true
+    this.broadcastRun(measurement, testName)
+
+    this.sendTrial(trial, measurement)
+    .then(() => this.broadcastUpdate(trial, measurement, testName))
+
+    return [measurement, testName]
   },
 
-  run_download: async function (callback) {
-    let testResult
+  async run_download () {
+    let error = null
+    let failure = 0
 
-    try {
-      testResult = await this.runDownload(callback)
-    } catch (error) {
-      if (error.hasOwnProperty('status') && error.status === 409) {
-        this.showBusy('download')
-      } else {
-        this.showFail('download')
+    const isOpen = await this.slotIsOpen()
+
+    if (isOpen) {
+      try {
+        return await this.runDownload()
+      } catch (error) {
+        failure = (error.hasOwnProperty('status') && error.status === 409) ? 1 : 2
       }
-      return
+    } else {
+      failure = 1
     }
 
-    if (!testResult) this.showBusy('download')
+    if (failure === 1) ndt7view.showBusy('download')
+    else if (failure === 2) ndt7view.showFail('download')
+
+    throw new Error(`download test failure (${failure})`, {cause: error})
   },
 
-  run_upload: function (callback) {
-    this.runNdt(
-      'upload',
-      ndt7view.update_values.bind(ndt7view),
-      callback
-    );
+  run_upload () {
+    return this.runNdt('upload', ndt7view.updateValues.bind(ndt7view))
   },
-  
-  run_both: function () {
-    this.run_download(() => this.run_upload())
+
+  async run_both () {
+    result0 = await this.run_download()
+    result1 = await this.run_upload()
+    return [result0, result1]
   }
-};
+}
+
+const ndt7btn = {
+  btnId: 'test-network',
+  updateInterval: 3000,
+
+  btn: null,
+  poll: false,
+  timer: null,
+
+  initBtn () {
+    'use strict'
+
+    this.btn = document.getElementById(this.btnId)
+
+    this.bindClick()
+
+    this.startPoll()
+  },
+
+  bindClick () {
+    this.btn.addEventListener('click', this.handleClick.bind(this))
+  },
+  async handleClick () {
+    this.btn.disabled = true
+
+    this.stopPoll()
+
+    try {
+      await ndt7run.runDownload()
+    } catch (error) {
+      if (error.hasOwnProperty('status') && error.status === 409) {
+        ndt7view.showBusy('download')
+      } else {
+        ndt7view.showFail('download')
+      }
+    }
+
+    this.startPoll()
+  },
+
+  startPoll () {
+    this.poll = true
+    this.continuePoll()
+  },
+  stopPoll () {
+    this.poll = false
+    this.clearPoll()
+  },
+  clearPoll () {
+    if (this.timer) {
+      clearTimeout(this.timer)
+      this.timer = null
+    }
+  },
+  continuePoll () {
+    this.clearPoll()
+
+    this.timer = setTimeout(this.handleInterval.bind(this), this.updateInterval)
+  },
+  async handleInterval () {
+    if (! this.poll) return
+
+    const isOpen = await ndt7run.slotIsOpen()
+    this.btn.disabled = ! isOpen
+
+    this.continuePoll()
+  },
+}
 
 ndt7run.run_download()
+.finally(() => ndt7btn.initBtn())
