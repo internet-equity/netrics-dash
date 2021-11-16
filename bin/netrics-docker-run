@@ -71,7 +71,7 @@ fi
 
 sudo mkdir -p /var/run/netrics-dashboard
 
-if [ ! -f /var/run/netrics-dashboard/version ] || [ "$(</var/run/netrics-dashboard/version)" != 0.6.0 ]; then
+if [ ! -f /var/run/netrics-dashboard/version ] || [ "$(</var/run/netrics-dashboard/version)" != 1.0.0 ]; then
   TOPIC=$(</etc/nm-exp-active-netrics/nm-exp-active-netrics.toml \
           python3 -c "import sys, toml; sys.stdout.write(toml.load(sys.stdin).get('topic', ''))")
 
@@ -93,7 +93,7 @@ if [ ! -f /var/run/netrics-dashboard/version ] || [ "$(</var/run/netrics-dashboa
     --read-only                                                                                  \
     --user $(id -u):$(id -g)                                                                     \
     --name netrics-dashboard                                                                     \
-    chicagocdac/netrics-dashboard:0.6.0
+    chicagocdac/netrics-dashboard:1.0.0
 
   sudo docker inspect                                     \
     --format="{{.Config.Labels.appversion}}"              \
@@ -116,7 +116,7 @@ docker run                                                                      
   --read-only                                                                            \
   --user $(id -u):$(id -g)                                                               \
   --name netrics-dashboard-command                                                       \
-  chicagocdac/netrics-dashboard:0.6.0                                             \
+  chicagocdac/netrics-dashboard:1.0.0                                             \
   python -m app.cmd "$@"
 SCRIPT
 
