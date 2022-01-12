@@ -16,6 +16,7 @@ from cachetools import TTLCache
 from loguru import logger as log
 
 from app import config
+from app.lib.iteration import pairwise
 
 
 ONE_WEEK_S = 60 * 60 * 24 * 7
@@ -100,27 +101,7 @@ class DataFileBank:
         if self.flat and len(points) > 1:
             raise ValueError("cannot flatten multiple keys")
 
-        path_dirs = iter(self.dirs)
-
-        paths_counted = iter(())
-        path_count = 0
-
-        while op_stack and path_count < self.file_limit:
-            try:
-                (path_count, path) = next(paths_counted)
-            except StopIteration:
-                # path directory exhausted:
-                # initialize (next) path directory
-                try:
-                    path_dir = next(path_dirs)
-                except StopIteration:
-                    break
-
-                path_remainder = self.file_limit - path_count
-                paths_sorted = self.sorted_dir(path_dir, path_remainder)
-                paths_counted = enumerate(paths_sorted, 1 + path_count)
-                continue
-
+        for (path, path1) in pairwise(self.iter_paths()):
             try:
                 full_data = self.get_json(path)
             except json.JSONDecodeError:
@@ -143,9 +124,8 @@ class DataFileBank:
                             'data': full_data,
                             'points': points,
                             'write_key': write_key,
-                            'path_count': path_count,
                             'file_limit': self.file_limit,
-                            'last': path_count + 1 == self.file_limit,
+                            'last': path1 is None,
                             'meta_prefix': self.meta_prefix,
                             'flat': self.flat,
                         },
@@ -171,6 +151,9 @@ class DataFileBank:
                 #     del key_stack[write_key]
                 #     points[write_key] = self.round_value(key_data)
 
+            if not op_stack:
+                break
+
         # DEBUG: points['_path_count'] = path_count
 
         if self.flat:
@@ -190,6 +173,32 @@ class DataFileBank:
                 return {key: self.round_value(value0) for (key, value0) in value.items()}
 
         return value
+
+    def iter_paths(self):
+        """Generate data file paths in descending order.
+
+        Data file directories are read in their order specified upon
+        instantiation. Within each directory, files are generated in
+        descending order according to their path names; (in so far as
+        these are consistenty labeled by timestamp, they are also
+        therefore generated in descending time order).
+
+        Paths will not be generated beyond the file limit specified upon
+        instantiation.
+
+        """
+        path_count = 0
+
+        for path_dir in self.dirs:
+            path_remainder = self.file_limit - path_count
+
+            if path_remainder <= 0:
+                break
+
+            paths_sorted = self.sorted_dir(path_dir, path_remainder)
+
+            for (path_count, path) in enumerate(paths_sorted, 1 + path_count):
+                yield path
 
     #
     # In testing against an HTTP endpoint whose query required ~500 files,
