@@ -1,4 +1,4 @@
-FROM python:3.9-alpine3.14
+FROM python:3.9-alpine3.17
 # Starting with 3.14 features sqlite3.35 and "returning" clause
 
 # Builds intended for deployment should specify the software
@@ -7,10 +7,11 @@ ARG APPVERSION
 ARG APPNAME=dashboard
 
 # Label "version" may be incremented upon changing this file.
-LABEL version="2" \
+LABEL version="3" \
       appname="$APPNAME" \
       appversion="$APPVERSION"
 
+# Configure core app environment.
 ENV APP_NAME="$APPNAME" \
     APP_VERSION="$APPVERSION" \
     APP_HOST="0.0.0.0" \
@@ -18,6 +19,7 @@ ENV APP_NAME="$APPNAME" \
     PYTHONPATH=/usr/src/"$APPNAME"/srv \
     PYTHONUNBUFFERED=1
 
+# Create core app user, group and directories.
 RUN set -ex && \
     addgroup -S "$APPNAME" && \
     adduser --no-create-home --disabled-password "$APPNAME" --ingroup "$APPNAME" && \
@@ -30,14 +32,29 @@ RUN set -ex && \
 
 WORKDIR /usr/src/"$APPNAME"
 
-# Copy in API source from host disk
+# Copy in API source from host disk.
 COPY --chown="$APPNAME":"$APPNAME" src/srv/ srv/
 
 # ...and requirement file(s)
 COPY --chown="$APPNAME":"$APPNAME" requirement/ requirement/
 
-RUN set -ex && \
-    python -m pip install --no-cache-dir -r requirement/main.txt
+# Install web app (globally)
+RUN set -ex \
+    ; python -m pip install --no-cache-dir -r requirement/main.txt
+
+# ...and Fate (isolated with global links)
+#
+# (fate installed into venv but override prefix inference to treat as system-global)
+#
+ENV FATE_PREFIX_PROFILE="system"
+
+COPY etc/fate /etc/fate
+
+# (note: busybox ln doesn't appear to support -t as expected)
+RUN set -ex \
+    ; python -m venv /usr/local/lib/fate \
+    ; /usr/local/lib/fate/bin/pip install --no-cache-dir fate-scheduler==0.1.0rc2 \
+    ; ln -s /usr/local/lib/fate/bin/fate* /usr/local/bin
 
 USER "$APPNAME"
 
