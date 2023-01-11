@@ -1,7 +1,5 @@
 services:
   ndt:
-    container_name: ndt-server
-
     image: "chicagocdac/ndt-server-full:${NDT_SERVER_VERSION:-latest}"
 
     command: [
@@ -33,12 +31,10 @@ services:
     restart: always
 
     volumes:
-      - ndt-server-cert:/cert:rw
-      - ndt-server-data:/data:rw
+      - ndt-cert:/cert:rw
+      - ndt-data:/data:rw
 
   web:
-    container_name: netrics-dashboard
-
     image: "chicagocdac/netrics-dashboard:${NETRICS_DASHBOARD_VERSION:-latest}"
 
     logging:
@@ -55,23 +51,19 @@ services:
     restart: always
 
     volumes:
-      - netrics-dashboard-data:/var/lib/dashboard:rw
-      - netrics-measurements-data:/var/lib/nm:ro
+      - web-data:/var/lib/dashboard:rw
+      - measurements-data:/var/lib/nm:ro
 
     environment:
       DATAFILE_PENDING: "/var/lib/nm/nm-exp-active-netrics/upload/pending/${NETRICS_TOPIC:-default}/json/"
       DATAFILE_ARCHIVE: "/var/lib/nm/nm-exp-active-netrics/upload/archive/${NETRICS_TOPIC:-default}/json/"
 
   etl:
-    container_name: netrics-dashboard-etl
-
     image: "chicagocdac/netrics-dashboard:${NETRICS_DASHBOARD_VERSION:-latest}"
 
     user: root
 
-    command:
-      - fated
-      - --foreground
+    command: dashboard-extract
 
     logging:
       driver: local
@@ -84,10 +76,10 @@ services:
       - /run
 
     volumes:
-      - netrics-dashboard-data:/var/lib/dashboard:rw
-      - netrics-measurements-data:/var/lib/nm:rw
-      - ndt-server-data:/var/lib/ndt-server/data:rw
-      - netrics-dashboard-etl:/var/lib/fate:rw
+      - web-data:/var/lib/dashboard:rw
+      - measurements-data:/var/lib/nm:rw
+      - ndt-data:/var/lib/ndt-server/data:rw
+      - etl-state:/var/lib/fate:rw
 
     environment:
       EXTRACT_DIR: "/var/lib/nm/nm-exp-local-dashboard/upload/"
@@ -106,7 +98,7 @@ volumes:
   # should the netrics measurements data volume instead be managed by this file,
   # then this should perhaps change.
   #
-  netrics-measurements-data:
+  measurements-data:
     driver: local
     driver_opts:
       type: none
@@ -122,19 +114,19 @@ volumes:
   #
   # YMMV.
   #
-  netrics-dashboard-data:
+  web-data:
 
   #
   # ndt certificate files
   #
-  ndt-server-cert:
+  ndt-cert:
 
   #
   # ndt data
   #
-  ndt-server-data:
+  ndt-data:
 
   #
   # etl manager state data
   #
-  netrics-dashboard-etl:
+  etl-state:
