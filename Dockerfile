@@ -24,18 +24,18 @@ ENV APP_NAME="$APPNAME"                               \
 
 # Create core app user, group and directories.
 RUN <<-EOF
-    set -ex
+	set -ex
 
-    addgroup -S "$APPNAME"
-    adduser --no-create-home --disabled-password "$APPNAME" --ingroup "$APPNAME"
+	addgroup -S "$APPNAME"
+	adduser --no-create-home --disabled-password "$APPNAME" --ingroup "$APPNAME"
 
-    mkdir -p /usr/src/"$APPNAME"
-    chown "$APPNAME" /usr/src/"$APPNAME"
-    chmod ug+rwx /usr/src/"$APPNAME"
+	mkdir -p /usr/src/"$APPNAME"
+	chown "$APPNAME" /usr/src/"$APPNAME"
+	chmod ug+rwx /usr/src/"$APPNAME"
 
-    mkdir -p /var/lib/"$APPNAME"
-    chown "$APPNAME" /var/lib/"$APPNAME"
-    chmod ug+rwx /var/lib/"$APPNAME"
+	mkdir -p /var/lib/"$APPNAME"
+	chown "$APPNAME" /var/lib/"$APPNAME"
+	chmod ug+rwx /var/lib/"$APPNAME"
 EOF
 
 WORKDIR /usr/src/"$APPNAME"
@@ -59,15 +59,26 @@ ENV FATE_PREFIX_PROFILE="system"
 COPY etc/fate /etc/fate
 
 RUN <<-EOF
-    set -ex
+	set -ex
 
-    python -m venv /usr/local/lib/fate
+	python -m venv /usr/local/lib/fate
 
-    /usr/local/lib/fate/bin/pip install --no-cache-dir fate-scheduler=="$FATEVERSION"
+	/usr/local/lib/fate/bin/pip install --no-cache-dir fate-scheduler=="$FATEVERSION"
 
-    # (note: busybox ln doesn't appear to support -t as expected)
-    ln -s /usr/local/lib/fate/bin/fate* /usr/local/bin
+	# (note: busybox ln doesn't appear to support -t as expected)
+	ln -s /usr/local/lib/fate/bin/fate* /usr/local/bin
 EOF
+
+# Create conventional interface convenience scripts.
+COPY --chmod=775 <<-dashboard-serve /usr/local/bin/"${APPNAME}"-serve
+	#!/bin/sh
+	exec python -m app
+dashboard-serve
+
+COPY --chmod=775 <<-dashboard-extract /usr/local/bin/"${APPNAME}"-extract
+	#!/bin/sh
+	exec fated --foreground
+dashboard-extract
 
 USER "$APPNAME"
 
