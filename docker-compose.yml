@@ -109,6 +109,7 @@ volumes:
   netrics-measurements-data:
     driver: local
     driver_opts:
+      type: none
       device: "${NETRICS_MEASUREMENTS_PATH:-/var/nm}"
       o: bind
 
