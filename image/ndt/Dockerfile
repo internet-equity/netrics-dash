@@ -1,4 +1,4 @@
-FROM measurementlab/ndt-server:v0.20.17
+FROM chicagocdac/ndt-server:v0.20.17
 
 RUN apk add --no-cache \
     openssl            \
