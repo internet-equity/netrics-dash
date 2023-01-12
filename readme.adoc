@@ -7,14 +7,22 @@ Basic orchestration for the local dashboard is also provided, via Docker,
 as well as for its required https://github.com/m-lab/ndt-server[ndt-server].
 
 Docker images are stored in Docker Hub:
-https://hub.docker.com/r/chicagocdac/netrics-dashboard[netrics-dashboard] and
-https://hub.docker.com/r/chicagocdac/ndt-server[ndt-server].
+https://hub.docker.com/r/chicagocdac/netrics-dashboard[netrics-dashboard],
+https://hub.docker.com/r/chicagocdac/ndt-server[ndt-server] and
+https://hub.docker.com/r/chicagocdac/ndt-server-full[ndt-server-full].
 
 
 == Installation
 
-To provision a Netrics device, a bootstrapping script is maintained under
-link:./bin/netrics-docker-run[bin/netrics-docker-run].
+=== Docker Compose
+
+An example link:./docker-compose.yml[docker-compose.yml] is provided to deploy
+the Local Dashboard web server, NDT server and data-extraction service anywhere.
+
+=== Scripted
+
+To provision a Netrics device (without Docker Compose), a bootstrapping script
+is maintained under link:./bin/netrics-docker-run[bin/netrics-docker-run].
 
 This script is intended for execution from the Netrics device. To execute this
 script from another network-connected device (_e.g._ your laptop), any tool such
@@ -34,7 +42,7 @@ curl -s --head https://github.com/chicago-cdac/netrics-dash/releases/latest | gr
 ```
 ====
 
-=== Local installation
+==== Local installation
 
 To execute the script on a Netrics device and provision it with the local
 dashboard &ndash; version 0.2.0 &ndash; _without_ cloning this repository:
@@ -43,7 +51,7 @@ dashboard &ndash; version 0.2.0 &ndash; _without_ cloning this repository:
 curl -s https://raw.githubusercontent.com/chicago-cdac/netrics-dash/0.2.0/bin/netrics-docker-run | bash
 ```
 
-=== Remote installation
+==== Remote installation
 
 TIP: The Netrics device is _generally_ network-accessible at host name
 `netrics.local` and this will be assumed below.
