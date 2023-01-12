@@ -74,6 +74,7 @@ services:
 
     tmpfs:
       - /run
+      - /tmp
 
     volumes:
       - web-data:/var/lib/dashboard:rw
