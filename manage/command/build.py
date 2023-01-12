@@ -6,7 +6,7 @@ from manage.main import Management
 
 
 def version_type(value):
-    if not re.match(r'\d\.\d\.\d', value):
+    if not re.match(r'v?\d+\.\d+\.\d+', value):
         raise ValueError('invalid version number')
 
     return value
@@ -17,13 +17,15 @@ class Build(lib.DockerCommand):
     """build dashboard images for amd64 & arm64"""
 
     def __init__(self, parser):
-        parser.add_argument('target', choices=('dash', 'ndt'), nargs='?',
-                            help="build target (default: all)")
+        parser.add_argument('target', choices=('dash', 'ndt', 'ndt-full'),
+                            help="build target")
         parser.add_argument('--version', type=version_type,
-                            help="version to apply to the local dashboard app (e.g.: 1.0.1)")
+                            help="version to apply to the local dashboard app or to "
+                                 "the extended ndt server (e.g.: 1.0.1)")
         parser.add_argument('--ndt-cache', default=(config.REPO_PATH / '.ndt-server'),
                             metavar='PATH', type=pathlib.Path,
-                            help="path at which to cache the ndt-server repository (default: %(default)s)")
+                            help="path at which to cache the ndt-server repository "
+                                 '(for basic "ndt" build) (default: %(default)s)')
         parser.add_argument('--builder', default='netrics-dashboard', metavar='NAME',
                             help="name to assign to builder (default: %(default)s)")
         parser.add_argument('--binfmt', default=config.BINFMT_TAG, metavar='TAG',
@@ -34,13 +36,11 @@ class Build(lib.DockerCommand):
                             help="do NOT tag images as \"latest\"")
 
     def prepare(self, args, parser):
-        targets = {'dash', 'ndt'} if not args.target else {args.target}
-
-        if 'dash' in targets:
+        if args.target == 'dash' or args.target == 'ndt-full':
             if not args.version:
-                parser.error('--version required to build dash')
+                parser.error('--version required to build either dash or ndt-full')
         elif args.version:
-            parser.error('--version only applies to dash build')
+            parser.error('--version only applies to dash and ndt-full builds')
 
         platforms = 'linux/amd64,linux/arm64' if args.push else 'linux/amd64'
 
@@ -73,7 +73,7 @@ class Build(lib.DockerCommand):
             args.builder,
         ]
 
-        if 'ndt' in targets:
+        if args.target == 'ndt':
             if not args.ndt_cache.exists():
                 yield self.local.FG, self.local['git'][
                     'clone',
@@ -101,7 +101,18 @@ class Build(lib.DockerCommand):
                 action,
             ]
 
-        if 'dash' in targets:
+        elif args.target == 'ndt-full':
+            yield self.local.FG, self.docker[
+                'buildx',
+                'build',
+                '--platform', platforms,
+                '-t', f'{args.image_repo}/ndt-server-full:{args.version}',
+                ('-t', f'{args.image_repo}/ndt-server-full:latest') if args.tag_latest else (),
+                config.REPO_PATH / 'image' / 'ndt',
+                action,
+            ]
+
+        elif args.target == 'dash':
             yield self.local.FG, self.docker[
                 'buildx',
                 'build',

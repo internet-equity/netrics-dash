@@ -1,0 +1,133 @@
+services:
+  ndt:
+    image: "chicagocdac/ndt-server-full:${NDT_SERVER_VERSION:-latest}"
+
+    command: [
+      "-cert", "/cert/cert.pem",
+      "-key", "/cert/key.pem",
+      "-datadir", "/data",
+      "-ndt7_addr", ":4444",
+      "-ndt7_addr_cleartext", ":8888",
+    ]
+
+    logging:
+      driver: local
+
+    cap_drop:
+      - ALL
+
+    ports:
+      - target: 4444
+        published: "${NDT_SERVER_PORT_CRYPT:-4444}"
+        protocol: tcp
+        mode: bridge
+      - target: 8888
+        published: "${NDT_SERVER_PORT_CLEAR:-8888}"
+        protocol: tcp
+        mode: bridge
+
+    read_only: true
+
+    restart: always
+
+    volumes:
+      - ndt-cert:/cert:rw
+      - ndt-data:/data:rw
+
+  web:
+    image: "chicagocdac/netrics-dashboard:${NETRICS_DASHBOARD_VERSION:-latest}"
+
+    logging:
+      driver: local
+
+    ports:
+      - target: 8080
+        published: "${NETRICS_DASHBOARD_PORT:-80}"
+        protocol: tcp
+        mode: bridge
+
+    read_only: true
+
+    restart: always
+
+    volumes:
+      - web-data:/var/lib/dashboard:rw
+      - measurements-data:/var/lib/nm:ro
+
+    environment:
+      DATAFILE_PENDING: "/var/lib/nm/nm-exp-active-netrics/upload/pending/${NETRICS_TOPIC:-default}/json/"
+      DATAFILE_ARCHIVE: "/var/lib/nm/nm-exp-active-netrics/upload/archive/${NETRICS_TOPIC:-default}/json/"
+
+  etl:
+    image: "chicagocdac/netrics-dashboard:${NETRICS_DASHBOARD_VERSION:-latest}"
+
+    user: root
+
+    command: dashboard-extract
+
+    logging:
+      driver: local
+
+    read_only: true
+
+    restart: always
+
+    tmpfs:
+      - /run
+      - /tmp
+
+    volumes:
+      - web-data:/var/lib/dashboard:rw
+      - measurements-data:/var/lib/nm:rw
+      - ndt-data:/var/lib/ndt-server/data:rw
+      - etl-state:/var/lib/fate:rw
+
+    environment:
+      EXTRACT_DIR: "/var/lib/nm/nm-exp-local-dashboard/upload/"
+      NDT7_DIR: "/var/lib/ndt-server/data/ndt7/"
+
+volumes:
+  #
+  # netrics measurement data
+  #
+  # below we assume that netrics measurements data are managed *elsewhere*.
+  #
+  # rather than repeat a Docker bind mount for each service above, we define a
+  # single volume, but which is really just a Linux bind mount from *wherever*
+  # netrics data are and into the Docker daemon's path.
+  #
+  # should the netrics measurements data volume instead be managed by this file,
+  # then this should perhaps change.
+  #
+  measurements-data:
+    driver: local
+    driver_opts:
+      type: none
+      device: "${NETRICS_MEASUREMENTS_PATH:-/var/nm}"
+      o: bind
+
+  #
+  # netrics dashboard data
+  #
+  # rather than mandate that dashboard data is stored at a particular path on
+  # the host system -- such as /var/lib/netrics-dashboard -- below we ask the
+  # Docker daemon to manage this volume (somewhere under its path on the host).
+  #
+  # YMMV.
+  #
+  web-data:
+
+  #
+  # ndt certificate files
+  #
+  ndt-cert:
+
+  #
+  # ndt data
+  #
+  ndt-data:
+
+  #
+  # etl manager state data
+  #
+  etl-state:
