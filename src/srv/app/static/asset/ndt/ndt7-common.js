@@ -6,9 +6,11 @@ const ndt7common = (function () {
       let hostname = testHost.match(/^([^:]+)(?::|$)/)[1];
 
       if (hostname === 'localhost' || hostname === '0.0.0.0') {
-        // we'll presume for the moment that we still want to test against the Pi
-        // ...and guess that it's at netrics.local!
-        hostname = 'netrics.local';
+        const qs = new URLSearchParams(location.search);
+
+        if (qs.has('ndtHost')) {
+          hostname = qs.get('ndtHost');
+        }
       }
 
       let lastMeasurement = null;
