@@ -80,6 +80,8 @@ def get_multikey(multikey, values):
 class DataFileBank:
     """Interface to read operations on sets of Netrics data files."""
 
+    DATA_FILE_READ_ERRORS = (json.JSONDecodeError, UnicodeDecodeError)
+
     def __init__(self,
                  prefix=DATAFILE_PREFIX,
                  file_limit=DATAFILE_LIMIT,
@@ -92,7 +94,7 @@ class DataFileBank:
         self.dirs = dirs
         self.round_to = round_to
         self.flat = flat
-        self.meta_prefix=meta_prefix
+        self.meta_prefix = meta_prefix
 
     def get_points(self, *ops, **named_ops):
         op_stack = dict(((str(op), op) for op in ops), **named_ops)
@@ -101,19 +103,8 @@ class DataFileBank:
         if self.flat and len(points) > 1:
             raise ValueError("cannot flatten multiple keys")
 
-        for (path, path1) in pairwise(self.iter_paths()):
-            try:
-                full_data = self.get_json(path)
-            except json.JSONDecodeError:
-                continue
-
-            if self.prefix:
-                try:
-                    data = get_multikey(self.prefix, full_data)
-                except KeyError:
-                    continue
-            else:
-                data = full_data
+        for (dataset, dataset1) in pairwise(self.iter_datasets()):
+            (data, full_data) = dataset
 
             for (write_key, aggregator) in tuple(op_stack.items()):
                 try:
@@ -125,7 +116,7 @@ class DataFileBank:
                             'points': points,
                             'write_key': write_key,
                             'file_limit': self.file_limit,
-                            'last': path1 is None,
+                            'last': dataset1 is None,
                             'meta_prefix': self.meta_prefix,
                             'flat': self.flat,
                         },
@@ -200,6 +191,35 @@ class DataFileBank:
             for (path_count, path) in enumerate(paths_sorted, 1 + path_count):
                 yield path
 
+    def iter_datasets(self):
+        """Generate data files' datasets.
+
+        Files with incompatible encoding or serialization are ignored.
+
+        Data are returned as a tuple of:
+
+          1. the data retrieved from the configured `prefix`
+          2. the file's full data object
+
+        See `iter_paths`.
+
+        """
+        for path in self.iter_paths():
+            try:
+                full_data = self.get_json(path)
+            except self.DATA_FILE_READ_ERRORS:
+                continue
+
+            if self.prefix:
+                try:
+                    data = get_multikey(self.prefix, full_data)
+                except KeyError:
+                    continue
+                else:
+                    yield (data, full_data)
+            else:
+                yield (full_data, full_data)
+
     #
     # In testing against an HTTP endpoint whose query required ~500 files,
     # an LRU cache of the same size added a lag of ~10% to the initial request,
@@ -248,7 +268,7 @@ class DataFileBank:
             for (path_count, path) in enumerate(paths_sorted, 1 + path_count):
                 try:
                     cls.get_json(path)
-                except json.JSONDecodeError:
+                except cls.DATA_FILE_READ_ERRORS:
                     pass
 
             if path_count == file_limit:

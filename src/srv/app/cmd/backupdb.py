@@ -4,6 +4,7 @@ import gzip
 import pathlib
 import re
 import sys
+from typing import Optional
 from datetime import datetime
 
 from argcmdr import Command
@@ -21,9 +22,49 @@ class BackupDB(Command):
 
     file_name_format = 'dashboard_data_{date_time}_{timestamp}_{table_name}_{columns}.chunk.csv'
 
-    file_name_pattern = re.compile(r'^dashboard_data_\d{8}_\d{6}_(\d+)_[a-z]+_[-a-z]+\.chunk\.csv(?:\.gz)?$')
+    file_name_pattern = re.compile(r'^dashboard_data_\d{8}_\d{6}'
+                                   r'_(?P<timestamp>\d+)'
+                                   r'_(?P<table_name>[a-z]+)'
+                                   r'_[-a-z]+\.chunk\.csv(?:\.gz)?$')
 
     Nil = object()
+
+    @classmethod
+    def find_last_written(cls, *directories: pathlib.Path, table_name: Optional[str] = None) -> int:
+        """Determine from target `directories` when a backup was last run.
+
+        Directories' contents are listed, in order, to inspect their
+        contained files.
+
+        Upon discovery of file names which reflect generation by this
+        command, timestamps are extracted from these names, and the most
+        recent timestamp is returned.
+
+        Backups under consideration may be filtered to a specific
+        `table_name`.
+
+        If no appropriately-named files are found, the epoch timestamp
+        `0` is returned.
+
+        """
+        for target in directories:
+            matches = (cls.file_name_pattern.search(path.name) for path in target.iterdir())
+
+            timestamps = (
+                int(match.group('timestamp'))
+                for match in matches
+                if match and (
+                    table_name is None or
+                    match.group('table_name') == table_name
+                )
+            )
+
+            try:
+                return max(timestamps)
+            except ValueError:
+                pass
+
+        return 0
 
     @storeresults
     def execute_statements(self, statements):
@@ -90,6 +131,11 @@ class BackupDB(Command):
             help="table(s) to back up (default: all)",
         )
         parser.add_argument(
+            '--flat',
+            action='store_true',
+            help='write backup files to target directory without intermediary directories',
+        )
+        parser.add_argument(
             '--compress',
             action='store_true',
             help='gzip backup files',
@@ -114,29 +160,22 @@ class BackupDB(Command):
                 continue
 
             with lock:
-                self.backup_table(table_name, columns, args.target, args.compress)
+                self.backup_table(table_name, columns, args.target, args.flat, args.compress)
 
-    def backup_table(self, table_name, columns, target, compress):
+    def backup_table(self, table_name, columns, target, flat, compress):
         if target:
-            table_target = target / 'pending' / table_name / 'csv'
-            table_archive = target / 'archive' / table_name / 'csv'
+            if flat:
+                table_target = target
+                table_archive = target.parent.joinpath('archive')
+            else:
+                table_target = target / 'pending' / table_name / 'csv'
+                table_archive = target / 'archive' / table_name / 'csv'
 
             table_target.mkdir(parents=True, exist_ok=True)
             table_archive.mkdir(parents=True, exist_ok=True)
 
-            try:
-                # fall back to archive directory in case pending recently emptied
-                last_written = max(table_target.iterdir(), default=None) or max(table_archive.iterdir())
-            except ValueError:
-                # first backup
-                since = 0
-            else:
-                name_match = self.file_name_pattern.search(last_written.name)
-                if not name_match:
-                    sys.stderr.write(f"[ERROR] unexpected file '{last_written.name}' under '{table_target}'")
-                    return
-
-                since = int(name_match.group(1))
+            # fall back to archive directory in case pending recently emptied
+            since = self.find_last_written(table_target, table_archive, table_name=table_name)
         else:
             since = 0
             table_target = None
@@ -168,11 +207,11 @@ class BackupDB(Command):
 
             if compress:
                 file_name += '.gz'
-                opener = lambda: gzip.open(table_target / file_name, 'wt')
+                opener = lambda: gzip.open(table_target / file_name, 'wt')  # noqa: E731
             else:
-                opener = lambda: open(table_target / file_name, 'w')
+                opener = lambda: open(table_target / file_name, 'w')  # noqa: E731
         else:
-            opener = lambda: contextlib.nullcontext(sys.stdout)
+            opener = lambda: contextlib.nullcontext(sys.stdout)  # noqa: E731
 
         with opener() as file_descriptor:
             writer = csv.writer(file_descriptor)
