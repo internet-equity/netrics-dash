@@ -70,20 +70,36 @@ RUN <<-EOF
 EOF
 
 # Create conventional interface convenience scripts.
-COPY --chmod=775 <<-dashboard-serve /usr/local/bin/"${APPNAME}"-serve
+#
+# These will additionally bootstrap (create) the environment-configured database directory
+# if it doesn't already exist.
+#
+COPY --chmod=775 <<-"app-serve" /usr/local/bin/serve
 	#!/bin/sh
-	exec python -m app
-dashboard-serve
+	case "${APP_DATABASE}" in file:*) mkdir -p $(dirname "${APP_DATABASE#?????}") || exit 1; esac
 
-COPY --chmod=775 <<-dashboard-extract /usr/local/bin/"${APPNAME}"-extract
+	exec python -m app
+app-serve
+
+COPY --chmod=775 <<-"app-extract" /usr/local/bin/extract
 	#!/bin/sh
+	case "${APP_DATABASE}" in file:*) mkdir -p $(dirname "${APP_DATABASE#?????}") || exit 1; esac
+
 	exec fated --foreground
-dashboard-extract
+app-extract
+
+RUN <<-EOF
+	set -ex
+
+	ln -s /usr/local/bin/serve /usr/local/bin/"${APPNAME}"-serve
+
+	ln -s /usr/local/bin/extract /usr/local/bin/"${APPNAME}"-extract
+EOF
 
 USER "$APPNAME"
 
 WORKDIR /usr/src/"$APPNAME"/srv
 
-CMD ["python", "-m", "app"]
+CMD ["serve"]
 
 EXPOSE 8080
