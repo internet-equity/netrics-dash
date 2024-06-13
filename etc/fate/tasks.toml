@@ -5,18 +5,19 @@ exec = [
   "app.cmd",
   "backupdb",
   "--compress",
+  "--flat",
   "{{ env.EXTRACT_DIR }}",
 ]
 if = "env.EXTRACT_DIR"
 schedule = "@midnight"
 
-[extract-ndt7]
+[extract-ndt]
 shell = '''
-  # move ndt7 data files into place
-  find "$NDT7_DIR" -type f \! -empty -print0 | xargs -0 -r mv -t "$EXTRACT_DIR/pending/ndt7/json/"
+  # move NDT data files into place
+  find "$DATA_DIR" -type f \! -empty -print0 | xargs -0 -r mv -t "$EXTRACT_DIR"
 
   # clean up empty source directories
-  find "$NDT7_DIR" -mindepth 1 -type d -empty -delete
+  find "$DATA_DIR" -mindepth 1 -type d -empty -delete
 '''
-if = "env.EXTRACT_DIR and env.NDT7_DIR"
+if = "env.EXTRACT_DIR and env.DATA_DIR"
 schedule = "@midnight"
