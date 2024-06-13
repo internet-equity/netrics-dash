@@ -46,6 +46,8 @@ def generate_certificate(cert, key):
         return None
 
     if not key.exists():
+        key.parent.mkdir(parents=True, exist_ok=True)
+
         try:
             subprocess.run(['openssl', 'genrsa', '-out', key], check=True)
         except subprocess.CalledProcessError as exc:
