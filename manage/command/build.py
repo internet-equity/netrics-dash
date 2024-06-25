@@ -1,5 +1,6 @@
-import pathlib
 import re
+
+from descriptors import cachedproperty
 
 from manage import config, lib
 from manage.main import Management
@@ -17,35 +18,56 @@ class Build(lib.DockerCommand):
     """build dashboard images for amd64 & arm64"""
 
     def __init__(self, parser):
-        parser.add_argument('target', choices=('dash', 'ndt', 'ndt-full'),
-                            help="build target")
-        parser.add_argument('--version', type=version_type,
+        parser.add_argument('target', choices=('dash', 'ndt'), help="build target")
+        parser.add_argument('version', type=version_type,
                             help="version to apply to the local dashboard app or to "
                                  "the extended ndt server (e.g.: 1.0.1)")
-        parser.add_argument('--ndt-cache', default=(config.REPO_PATH / '.ndt-server'),
-                            metavar='PATH', type=pathlib.Path,
-                            help="path at which to cache the ndt-server repository "
-                                 '(for basic "ndt" build) (default: %(default)s)')
         parser.add_argument('--builder', default='netrics-dashboard', metavar='NAME',
                             help="name to assign to builder (default: %(default)s)")
         parser.add_argument('--binfmt', default=config.BINFMT_TAG, metavar='TAG',
                             help="Docker image tag of binfmt (default: %(default)s)")
         parser.add_argument('--push', action='store_true',
-                            help="push images to remote repository (rather than load images locally)")
+                            help="push images to remote repository "
+                                 "(rather than load images locally)")
         parser.add_argument('--no-latest', action='store_false', dest='tag_latest',
                             help="do NOT tag images as \"latest\"")
 
-    def prepare(self, args, parser):
-        if args.target == 'dash' or args.target == 'ndt-full':
-            if not args.version:
-                parser.error('--version required to build either dash or ndt-full')
-        elif args.version:
-            parser.error('--version only applies to dash and ndt-full builds')
+    @cachedproperty
+    def action(self):
+        return '--push' if self.args.push else '--load'
 
-        platforms = 'linux/amd64,linux/arm64' if args.push else 'linux/amd64'
+    @cachedproperty
+    def platforms(self):
+        return 'linux/amd64,linux/arm64' if self.args.push else 'linux/amd64'
 
-        action = '--push' if args.push else '--load'
+    def tag_args(self, uri, version):
+        args = ('-t', f'{uri}:{version}')
 
+        return args + ('-t', f'{uri}:latest') if self.args.tag_latest else args
+
+    def prepare_ndt(self):
+        yield self.local.FG, self.docker[
+            'buildx',
+            'build',
+            '--platform', self.platforms,
+            '--build-arg', f'BASE_TAG={config.NDT_SERVER_TAG}',
+            self.tag_args(f'{self.args.image_repo}/ndt-server-full', self.args.version),
+            config.REPO_PATH / 'image' / 'ndt',
+            self.action,
+        ]
+
+    def prepare_dash(self):
+        yield self.local.FG, self.docker[
+            'buildx',
+            'build',
+            '--platform', self.platforms,
+            '--build-arg', f'APPVERSION={self.args.version}',
+            self.tag_args(f'{self.args.image_repo}/netrics-dashboard', self.args.version),
+            config.REPO_PATH,
+            self.action,
+        ]
+
+    def prepare(self, args):
         if not config.BINFMT_TARGET.exists():
             yield self.local.FG, self.docker[
                 'run',
@@ -74,52 +96,10 @@ class Build(lib.DockerCommand):
         ]
 
         if args.target == 'ndt':
-            if not args.ndt_cache.exists():
-                yield self.local.FG, self.local['git'][
-                    'clone',
-                    '--branch', config.NDT_SERVER_TAG,
-                    '--config', 'advice.detachedHead=false',
-                    '--depth', '1',
-                    f'https://github.com/{config.NDT_SERVER_ORIGIN}.git',
-                    args.ndt_cache,
-                ]
-
-            (_retcode, stdout, _stderr) = yield lib.SHH, self.local['git'][
-                '-C', args.ndt_cache,
-                'describe',
-                '--tag',
-            ]
-            ndt_tag = 'DRY.RUN' if stdout is None else stdout.strip()
-
-            yield self.local.FG, self.docker[
-                'buildx',
-                'build',
-                '--platform', platforms,
-                '-t', f'{args.image_repo}/ndt-server:{ndt_tag}',
-                ('-t', f'{args.image_repo}/ndt-server:latest') if args.tag_latest else (),
-                args.ndt_cache,
-                action,
-            ]
-
-        elif args.target == 'ndt-full':
-            yield self.local.FG, self.docker[
-                'buildx',
-                'build',
-                '--platform', platforms,
-                '-t', f'{args.image_repo}/ndt-server-full:{args.version}',
-                ('-t', f'{args.image_repo}/ndt-server-full:latest') if args.tag_latest else (),
-                config.REPO_PATH / 'image' / 'ndt',
-                action,
-            ]
+            yield from self.prepare_ndt()
 
         elif args.target == 'dash':
-            yield self.local.FG, self.docker[
-                'buildx',
-                'build',
-                '--platform', platforms,
-                '--build-arg', f'APPVERSION={args.version}',
-                '-t', f'{args.image_repo}/netrics-dashboard:{args.version}',
-                ('-t', f'{args.image_repo}/netrics-dashboard:latest') if args.tag_latest else (),
-                config.REPO_PATH,
-                action,
-            ]
+            yield from self.prepare_dash()
+
+        else:
+            raise NotImplementedError(args.target)
