@@ -384,7 +384,7 @@ const networkStats = {
 
 
 const extWatcher = {
-  enabled: true,
+  enabled: false,
   installed: null,
   extDataType: 'ndt7ext',
   storageKeys: ['notInstalledDimiss', 'installedDismiss'],
