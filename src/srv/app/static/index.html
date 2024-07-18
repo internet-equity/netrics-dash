@@ -107,19 +107,19 @@
 
           <p>
           Internet bandwidth is the amount of data that
-	    you can send or receive from the Internet, 
-	    through your router,
+	    you can receive from and send to the Internet &ndash; "download" and "upload" &ndash;
+	    through your modem,
 	    in "Megabits per second" (Mbps).
-	  This affects how many people in your household can
-	    can simultaneously use applications like Netflix or Zoom.
+          This affects how many people in your household
+	    can simultaneously use applications like Netflix and Zoom.
         </p>
         <p>
 	  Your current bandwidth of 
-	    <span id=text_ookla_dl>25</span>/<span id=text_ookla_ul>3</span>&nbsp;Mbps
-	    <span id=text_bw_interp>is similar to other </span> households in Chicago.
-	  It <span id=text_bw_fcc>exceeds</span> the "official" threshold of broadband Internet,
-	    of 25 Mbps download and 3 Mbps uploads.
-	    Your connection is <span id=text_bw_stability>stable</span> over time.
+	    <span id=text_ookla_dl>100</span>/<span id=text_ookla_ul>20</span>&nbsp;Mbps (download/upload) is
+	    <span id=text_bw_interp>similar to other </span> households' in Chicago.
+        It <span id=text_bw_fcc>exceeds</span> the federal standard for being "served" by broadband Internet,
+	    of 100 Mbps download and 20 Mbps upload.
+	    <span id=text_bw_stability>Your bandwidth is consistent</span> over time.
           </p>
 
 	  <p class=extras>
@@ -132,7 +132,7 @@
 	    One method, called TCP, is used for data in websites
 	      and another, UDP, is more appropriate for resource-intensive applications like 
 	      videos, where some information loss is accceptable
-	      (a missed frame is does not destroy the experience).
+	      (a missed frame does not destroy the experience).
 	    Accordingly, there are a number of ways of testing bandwidth:
 	      some for UDP and others for TCP.
 	    There are multiple programs for measuring TCP bandwidth.
@@ -171,7 +171,7 @@
           <h2>Network bandwidth.</h2>
 
           <p>
-	    Your home network bandwidth is how much your (wireless or Wi-Fi)
+	    Your home network bandwidth is how much data your (wireless or Wi-Fi)
 	      router can send to your computer, per second.
 	    If your network bandwidth is less than that of your Internet connection,
 	      you won't be able to use the full bandwidth that
@@ -259,7 +259,7 @@
           </p>
           <p>
 	    Your network latency to Google is 
-	      <span id=text_latency_interp>similar to other</span> households in Chicago.
+	      <span id=text_latency_interp>similar to other</span> households' in Chicago.
           </p>
 
 	  <p class=extras>
@@ -375,7 +375,6 @@
 
     <!-- device count requires platform feature not yet available: collapse -->
     <div class="row d-flex align-items-start dashrow collapse">
-
       	<div class="col-2"></div>
         <div class="col-5">
           <h2>Connected devices.</h2>
@@ -391,9 +390,8 @@
 	  </p>
 	  <div id=dev_more class=learn_more>
 	    <p>
-	      Every internet connected devices has a unique identifier, called a MAC address
-	      	for each interface (wifi, ethernet) over which it can connect to a network.
-	      Your Network Measurement Device queries the router for a list of connected devices, every five minutes.
+	      Every network-connected device has a unique identifier, called a MAC address.
+	      Your Network Measurement Device requests a count of these identifiers from your router, every five minutes.
 	    </p>
 	  </div>
 
@@ -418,8 +416,8 @@
 
   <footer>
     <p>
-      Internet Equity &amp; Access Initiative<br>
-      Center for Data and Computing<br>
+      Internet Equity Initiative<br>
+      Data Science Institute<br>
       University of Chicago
     </p>
     <p>

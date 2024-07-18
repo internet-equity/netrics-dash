@@ -109,16 +109,16 @@ const ispStats = (() => {
 
     if      (data["ookla_dl"] > 500) text_bw_interp.innerHTML = "higher than most";
     else if (data["ookla_dl"] < 30)  text_bw_interp.innerHTML = "lower than most";
-    else    text_bw_interp.innerHTML  = "similar to other"
+    else    text_bw_interp.innerHTML  = "similar to other";
 
-    if (data["ookla_dl"] > 25 && data["ookla_ul"] > 3)
+    if (data["ookla_dl"] >= 100 && data["ookla_ul"] >= 20)
       text_bw_fcc.innerHTML = "exceeds";
     else
       text_bw_fcc.innerHTML = "does not meet";
 
     if (data["ookla_dl_sd"] > 0.15 * data["ookla_dl"])
-      text_bw_stability.innerHTML = "not stable"
-    else text_bw_stability.innerHTML = "stable"
+      text_bw_stability.innerHTML = "However, your bandwidth varies significantly";
+    else text_bw_stability.innerHTML = "Your bandwidth is consistent";
 
     // Latency
     elem = document.getElementById("latency")
@@ -292,7 +292,7 @@ const networkStats = {
         win_text += ` <em>averaged</em> ${mbaud} megabits per second. This average is ${op} that of the connection from your ISP: that's ${desc}.`;
         info.append(`<p>${win_text}</p>`);
     } else if (success_rate !== null) {
-        info.append(`<p>In ${wifi_trial.success_count} of these tests (${success_rate}%), the bandwidth of your network exceeded the most recent bandwidth of your connection to the Internet. In ${failure_count} of these tests (${failure_rate}%), your network &ndash; (probably your Wi-Fi) &ndash; might have been the bottleneck of your Internet speed.</p>`);
+        info.append(`<p>In ${wifi_trial.success_count} of these tests (${success_rate}%), the bandwidth of your network exceeded the most recent bandwidth of your connection to the Internet. In ${failure_count} of these tests (${failure_rate}%), your network &ndash; (probably your Wi-Fi) &ndash; might have limited your Internet speed.</p>`);
     }
 
     document.querySelectorAll('.wifi-stats').forEach(elem => {
