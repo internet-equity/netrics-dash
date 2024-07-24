@@ -70,7 +70,7 @@ const ndt7view = {
     let speed = info.NumBytes / elapsed         /* B/s    */
     speed *= 8                                     /* bit/s  */
     speed /= 1e06                                  /* Mbit/s */
-    speed = speed.toFixed(1)
+    speed = speed.toFixed(speed < 10 ? 1 : 0)
 
     this.Elements.wifiBw.innerHTML = speed;
 

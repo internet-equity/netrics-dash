@@ -84,10 +84,18 @@ const ispStats = (() => {
   let $data = null
   let $request = null
 
+  function cleanNumber (value) {
+    return value >= 10 ? Math.round(value) : value
+  }
+
   function updateView (data) {
+    /* Update view with received data.
+     */
+
+    // Write data to banners.
     for (const [key, value] of Object.entries(data)) {
       const elem = document.getElementById(key)
-      if (elem) elem.innerHTML = value
+      if (elem) elem.innerHTML = cleanNumber(value)
     }
 
     // Oookla data setings.
@@ -100,8 +108,8 @@ const ispStats = (() => {
 
     document.getElementById("bw_slash").innerHTML = "/"
 
-    document.getElementById("text_ookla_dl").innerHTML = data["ookla_dl"]
-    document.getElementById("text_ookla_ul").innerHTML = data["ookla_ul"]
+    document.getElementById("text_ookla_dl").innerHTML = cleanNumber(data["ookla_dl"])
+    document.getElementById("text_ookla_ul").innerHTML = cleanNumber(data["ookla_ul"])
 
     const text_bw_interp    = document.getElementById("text_bw_interp")
     const text_bw_fcc       = document.getElementById("text_bw_fcc")
