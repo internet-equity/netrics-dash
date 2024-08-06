@@ -8,6 +8,25 @@ import schedule
 from loguru import logger as log
 
 
+class SafeTask:
+    """Wrap the given callable `func` to suppress exceptions `exc`.
+
+    Uncaught exceptions raised by task callables so wrapped will not
+    interrupt the task thread.
+
+    """
+    def __init__(self, func, exc=(Exception,)):
+        self.func = func
+        self.exc = exc
+
+    def __call__(self, *args, **kwargs):
+        try:
+            return self.func(*args, **kwargs)
+        except self.exc as error:
+            log.error('{0.__name__} | {1.__class__.__name__}: {1}', self.func, error)
+            return None
+
+
 class ThreadEnumerator(dict):
 
     def sync(self):

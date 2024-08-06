@@ -73,9 +73,23 @@ def init_tasks():
     datafile = importlib.import_module('app.data.file')
 
     # schedule tasks
-    populate_caches = schedule.every(4).hours.do(datafile.populate_caches)
+    #
+    # pre- and/or re-populate file caches.
+    #
+    # Wraps the DataFileBank method, to suppress FileNotFoundError, for
+    # use as a periodic task. A race condition may exist between the
+    # initialization of this service and of the measurement service(s);
+    # however, this should not crash the background thread nor otherwise
+    # interrupt the task's schedule.
+    #
+    # In this initial case, the performance hit of populating measurement
+    # caches in the main thread is negligible; and, subsequent task
+    # invocations *may* proceed without issue.
+    #
+    cache_task = task.SafeTask(datafile.populate_caches, exc=FileNotFoundError)
+    cache_job = schedule.every(4).hours.do(cache_task)
 
-    log.opt(lazy=True).debug('scheduled jobs | added {count}', count=lambda: len(schedule.get_jobs()))
+    log.opt(lazy=True).debug('scheduled jobs | added {}', lambda: len(schedule.get_jobs()))
 
     # init executioners
     #
@@ -88,7 +102,7 @@ def init_tasks():
     #
     # for now we just want to force this one task, once, on start-up:
     worker = task.ItemExecutioner.launch(max_items=1, stop_event=stop_event)
-    worker.queue.put(populate_caches)
+    worker.queue.put(cache_job)
 
     return stop_event
 
@@ -113,6 +127,7 @@ def logging(func):
         return func(*args, **kwargs)
 
     return log.catch(wrapper)
+
 
 logging.configured = False
 
