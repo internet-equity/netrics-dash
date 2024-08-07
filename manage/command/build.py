@@ -1,3 +1,4 @@
+import pathlib
 import re
 
 from descriptors import cachedproperty
@@ -18,10 +19,14 @@ class Build(lib.DockerCommand):
     """build dashboard images for amd64 & arm64"""
 
     def __init__(self, parser):
-        parser.add_argument('target', choices=('dash', 'ndt'), help="build target")
-        parser.add_argument('version', type=version_type,
+        parser.add_argument('target', choices=('dash', 'ndt-full', 'ndt-base'), help="build target")
+        parser.add_argument('--version', type=version_type,
                             help="version to apply to the local dashboard app or to "
                                  "the extended ndt server (e.g.: 1.0.1)")
+        parser.add_argument('--ndt-cache', default=(config.REPO_PATH / '.ndt-server'),
+                            metavar='PATH', type=pathlib.Path,
+                            help="path at which to cache the ndt-server repository "
+                                 '(for basic "ndt" build) (default: %(default)s)')
         parser.add_argument('--builder', default='netrics-dashboard', metavar='NAME',
                             help="name to assign to builder (default: %(default)s)")
         parser.add_argument('--binfmt', default=config.BINFMT_TAG, metavar='TAG',
@@ -45,7 +50,57 @@ class Build(lib.DockerCommand):
 
         return args + ('-t', f'{uri}:latest') if self.args.tag_latest else args
 
-    def prepare_ndt(self):
+    def prepare_ndt_base_tag(self):
+        (_retcode, stdout, _stderr) = yield lib.SHH, self.local['git'][
+            '-C', self.args.ndt_cache,
+            'describe',
+            '--tag',
+        ]
+        return stdout if stdout is None else stdout.strip()
+
+    def prepare_ndt_base(self):
+        # 1. m-lab was not initially building images at all
+        # 2. now, they're just building for amd64 -- not for arm64 as well
+        #
+        # here we build their server for amd64 and arm64
+        if self.args.ndt_cache.exists():
+            # ensure configured tag is checked out
+            if (yield from self.prepare_ndt_base_tag()) != config.NDT_SERVER_TAG:
+                yield self.local.FG, self.local['git'][
+                    '-C', self.args.ndt_cache,
+                    'fetch',
+                    '--depth', '1',
+                    'origin',
+                    f'+refs/tags/{config.NDT_SERVER_TAG}:refs/tags/{config.NDT_SERVER_TAG}',
+                ]
+                yield self.local.FG, self.local['git'][
+                    '-C', self.args.ndt_cache,
+                    'checkout',
+                    config.NDT_SERVER_TAG,
+                ]
+        else:
+            # clone server repo
+            yield self.local.FG, self.local['git'][
+                'clone',
+                '--branch', config.NDT_SERVER_TAG,
+                '--config', 'advice.detachedHead=false',
+                '--depth', '1',
+                f'https://github.com/{config.NDT_SERVER_ORIGIN}.git',
+                self.args.ndt_cache,
+            ]
+
+        ndt_tag = (yield from self.prepare_ndt_base_tag()) or 'DRY.RUN'
+
+        yield self.local.FG, self.docker[
+            'buildx',
+            'build',
+            '--platform', self.platforms,
+            self.tag_args(f'{self.args.image_repo}/ndt-server', ndt_tag),
+            self.args.ndt_cache,
+            self.action,
+        ]
+
+    def prepare_ndt_full(self):
         yield self.local.FG, self.docker[
             'buildx',
             'build',
@@ -67,7 +122,13 @@ class Build(lib.DockerCommand):
             self.action,
         ]
 
-    def prepare(self, args):
+    def prepare(self, args, parser):
+        if args.target == 'dash' or args.target == 'ndt-full':
+            if not args.version:
+                parser.error('--version required to build either dash or ndt-full')
+        elif args.version:
+            parser.error('--version only applies to dash and ndt-full builds')
+
         if not config.BINFMT_TARGET.exists():
             yield self.local.FG, self.docker[
                 'run',
@@ -95,8 +156,11 @@ class Build(lib.DockerCommand):
             args.builder,
         ]
 
-        if args.target == 'ndt':
-            yield from self.prepare_ndt()
+        if args.target == 'ndt-base':
+            yield from self.prepare_ndt_base()
+
+        elif args.target == 'ndt-full':
+            yield from self.prepare_ndt_full()
 
         elif args.target == 'dash':
             yield from self.prepare_dash()

@@ -1,6 +1,6 @@
 ARG BASE_TAG=latest
 
-FROM measurementlab/ndt-server:${BASE_TAG}
+FROM chicagocdac/ndt-server:${BASE_TAG}
 
 RUN apk add --no-cache \
     openssl            \
