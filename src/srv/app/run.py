@@ -86,7 +86,7 @@ def init_tasks():
     # caches in the main thread is negligible; and, subsequent task
     # invocations *may* proceed without issue.
     #
-    cache_task = task.SafeTask(datafile.populate_caches, exc=FileNotFoundError)
+    cache_task = task.SafeTask(datafile.populate_caches, exc=FileNotFoundError, level='WARNING')
     cache_job = schedule.every(4).hours.do(cache_task)
 
     log.opt(lazy=True).debug('scheduled jobs | added {}', lambda: len(schedule.get_jobs()))

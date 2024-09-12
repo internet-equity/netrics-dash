@@ -15,16 +15,20 @@ class SafeTask:
     interrupt the task thread.
 
     """
-    def __init__(self, func, exc=(Exception,)):
+    def __init__(self, func, exc=(Exception,), level='ERROR'):
         self.func = func
         self.exc = exc
+        self.level = level
 
     def __call__(self, *args, **kwargs):
         try:
             return self.func(*args, **kwargs)
         except self.exc as error:
-            log.error('{0.__name__} | {1.__class__.__name__}: {1}', self.func, error)
+            log.log(self.level, '{0.__name__} | {1.__class__.__name__}: {1}', self.func, error)
             return None
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self.func.__name__})"
 
 
 class ThreadEnumerator(dict):
