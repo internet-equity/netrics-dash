@@ -92,10 +92,11 @@ const ndt7view = {
     bwGauge.classList.add(label);
 
     if (complete) {
-      this.Elements.interpTxt1.innerHTML = op;
-      this.Elements.interpTxt2.innerHTML = desc;
-
-      this.Elements.interpTxt.classList.remove('d-none');
+      if (dl_value) {
+        this.Elements.interpTxt1.innerHTML = op;
+        this.Elements.interpTxt2.innerHTML = desc;
+        this.Elements.interpTxt.classList.remove('d-none');
+      }
 
       this.postLoading();
     }
