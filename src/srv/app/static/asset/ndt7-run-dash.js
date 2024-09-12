@@ -53,6 +53,14 @@ const ndt7view = {
   },
 
   updateValues (info, tag, complete) {
+    // reset bandwidth gauge
+    const bwGauge = this.Elements.wifiBw.parentElement
+
+    bwGauge.classList.remove('bad')
+    bwGauge.classList.remove('ok')
+    bwGauge.classList.remove('good')
+    bwGauge.classList.remove('null')
+
     if (!info) {
       if (complete && Number.isFinite(complete) && complete > this.TestStatus.complete) {
         const identifier = complete === this.TestStatus.busy ? 'errorBusy' : 'errorFailure'
@@ -61,6 +69,10 @@ const ndt7view = {
         errorNode.classList.remove('d-none')
 
         this.postLoading()
+
+        this.Elements.wifiBw.innerHTML = '&mdash;';
+
+        bwGauge.classList.add('null');
       }
 
       return
@@ -73,12 +85,6 @@ const ndt7view = {
     speed = speed.toFixed(speed < 10 ? 1 : 0)
 
     this.Elements.wifiBw.innerHTML = speed;
-
-    const bwGauge = this.Elements.wifiBw.parentElement
-
-    bwGauge.classList.remove('bad')
-    bwGauge.classList.remove('ok')
-    bwGauge.classList.remove('good')
 
     const dl_value = parseFloat(this.Elements.ooklaDl.innerHTML);
     const [op, desc, label] = this.compareSpeeds(speed, dl_value);
@@ -181,6 +187,8 @@ const ndt7run = {
     )
 
     this.broadcastRun(measurement, testName)
+
+    if (measurement === null) throw new TypeError("bad result");
 
     this.sendTrial(trial, measurement)
     .then(() => this.broadcastUpdate(trial, measurement, testName))

@@ -163,7 +163,15 @@ def stat_trials():
 
         if total_count > 0:
             file_bank = DataFileBank(flat=True)
-            ookla_dl = file_bank.get_points(Last('ookla.speedtest_ookla_download'))
+
+            try:
+                ookla_dl = file_bank.get_points(Last('ookla.speedtest_ookla_download'))
+            except FileNotFoundError:
+                # measurements (directory) not (yet) initialized
+                #
+                # treat this no differently than missing data points
+                #
+                ookla_dl = None
 
             if ookla_dl is not None:
                 cursor = conn.execute(f"""

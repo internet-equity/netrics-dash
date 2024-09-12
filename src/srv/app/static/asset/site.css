@@ -195,6 +195,11 @@ ul.dropdown-menu>li {
   border: 5px solid #800;
 }
 
+.null {
+  background-color: #c3c3c3;
+  border: 5px solid #878383;
+}
+
 .survey {
 
   color: black;

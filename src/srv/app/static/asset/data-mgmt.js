@@ -4,7 +4,12 @@ const dataView = {
     el.classList.remove("ok")
     el.classList.remove("good")
     el.classList.remove("attn")
+    el.classList.remove("null")
     el.classList.add(val)
+  },
+  show (id) {
+    // some code may execute before jQuery.collapse has initialized so we use class directly
+    document.getElementById(id).classList.add('show')
   },
 }
 
@@ -99,14 +104,17 @@ const ispStats = (() => {
     }
 
     // Oookla data setings.
-
     let elem = document.getElementById("ookla_dl")
     let pardiv = elem.parentElement.parentElement
-    if      (data["ookla_dl"] > 50) dataView.setColorClass(pardiv, "good");
-    else if (data["ookla_dl"] < 25) dataView.setColorClass(pardiv, "bad");
-    else                 dataView.setColorClass(pardiv, "ok");
 
-    document.getElementById("bw_slash").innerHTML = "/"
+    const ooklaReceived = data["ookla_dl"] !== null && data['ookla_ul'] !== null
+
+    if      (! ooklaReceived)       dataView.setColorClass(pardiv, "null");
+    else if (data["ookla_dl"] > 50) dataView.setColorClass(pardiv, "good");
+    else if (data["ookla_dl"] < 25) dataView.setColorClass(pardiv, "bad");
+    else                            dataView.setColorClass(pardiv, "ok");
+
+    document.getElementById("bw_slash").innerHTML = ooklaReceived ? "/" : "&mdash;"
 
     document.getElementById("text_ookla_dl").innerHTML = cleanNumber(data["ookla_dl"])
     document.getElementById("text_ookla_ul").innerHTML = cleanNumber(data["ookla_ul"])
@@ -128,17 +136,29 @@ const ispStats = (() => {
       text_bw_stability.innerHTML = "However, your bandwidth varies significantly";
     else text_bw_stability.innerHTML = "Your bandwidth is consistent";
 
+    if (ooklaReceived) dataView.show("bw_summary");
+    else               dataView.show("bw_empty");
+
     // Latency
     elem = document.getElementById("latency")
     pardiv = elem.parentElement
-    if      (data["latency"] < 15) dataView.setColorClass(pardiv, "good");
+
+    const latencyReceived = data["latency"] !== null
+
+    if      (! latencyReceived)    dataView.setColorClass(pardiv, "null");
+    else if (data["latency"] < 15) dataView.setColorClass(pardiv, "good");
     else if (data["latency"] > 40) dataView.setColorClass(pardiv, "bad");
-    else                 dataView.setColorClass(pardiv, "ok");
+    else                           dataView.setColorClass(pardiv, "ok");
+
+    if (! latencyReceived) document.getElementById("latency").innerHTML = "&mdash;";
 
     const text_latency_interp = document.getElementById("text_latency_interp")
     if (data["latency"] > 40) text_latency_interp.innerHTML = "worse than most";
     else if (data["latency"] < 10) text_latency_interp.innerHTML = "lower than most";
     else text_latency_interp.innerHTML = "similar to other";
+
+    if (latencyReceived) dataView.show("latency_summary");
+    else                 dataView.show("latency_empty");
   }
 
   function update (data) {
@@ -163,7 +183,7 @@ const ispStats = (() => {
 
 const ispPlots = {
   makePlots (data) {
-    var config = {"displayModeBar" : false}
+    var config = {"displayModeBar": false}
 
     var layout = {
       autosize: true,
@@ -184,10 +204,12 @@ const ispPlots = {
       }
     ];
 
-    bw_layout = layout;
-    bw_layout["yaxis"] = { title : { text: 'Bandwidth [Mbps]'} };
+    const bw_layout = Object.assign({"yaxis": {title: {text: 'Bandwidth [Mbps]'}}}, layout);
 
-    Plotly.newPlot('bw_plot', bw_series, bw_layout, config);
+    if (data.bw.ts !== null && (data.bw.dl !== null || data.bw.ul !== null)) {
+      Plotly.newPlot('bw_plot', bw_series, bw_layout, config)
+      .then(() => dataView.show('bw_plot_tog'));
+    }
 
 
     // LATENCY
@@ -201,11 +223,16 @@ const ispPlots = {
         x: data["latency"]["ts"], y: data["latency"]["wikipedia"]},
     ];
 
-    lat_layout = layout;
-    lat_layout["yaxis"] = { title : { text: 'Latency [ms]'},
-                            range : [0, 75]};
+    const lat_layout = Object.assign({"yaxis": {title: {text: 'Latency [ms]'}, range: [0, 75]}}, layout);
 
-    Plotly.newPlot('latency_plot', lat_series, lat_layout, config);
+    const latencyValueCount = Object.values(data.latency).reduce(
+      (count, value) => count + (value === null ? 0 : 1),
+      0
+    )
+    if (data.latency.ts !== null && latencyValueCount >= 2) {
+      Plotly.newPlot('latency_plot', lat_series, lat_layout, config)
+      .then(() => dataView.show('latency_plot_tog'));
+    }
 
     // CONSUMPTION
 
@@ -223,7 +250,7 @@ const ispPlots = {
 
     Plotly.newPlot('cons_plot', con_series, con_layout, config);
 
-    if (data['consumption']['ts'].length > 0) {
+    if (data['consumption']['ts']?.length > 0) {
       // consumption stat requires hardware we're not currently rolling out
       $('#cons_plot').parents('.row').first().collapse('show');
     }
@@ -307,7 +334,9 @@ const networkStats = {
         elem.style.display = 'initial';
     });
   },
-  makePlot (trials, totalCount, isp_dl) {
+  async makePlot (trials, totalCount, isp_dl) {
+    if (totalCount === 0) return null;
+
     // for date series:
     // trials.map(point => new Date(point.ts * 1000))  // timestamp => date
     //
@@ -324,7 +353,7 @@ const networkStats = {
       width: 5,
     }
 
-    return Plotly.react(
+    return await Plotly.react(
       // HTML target
       'wifi_plot',
 
@@ -383,8 +412,9 @@ const networkStats = {
 
     this.updateView(networkData, ispData.ookla_dl)
 
-    this.makePlot(networkData.recent_rates, networkData.total_count, ispData.ookla_dl)
-    .then(() => dataView.elementToggle.initDeferred('plots-trials'))
+    this.makePlot(networkData.recent_rates, networkData.total_count, ispData.ookla_dl).then((plot) => {
+      if (plot !== null) dataView.elementToggle.initDeferred('plots-trials')
+    })
 
     return networkData
   },

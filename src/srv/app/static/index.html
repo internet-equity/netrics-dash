@@ -113,13 +113,16 @@
           This affects how many people in your household
 	    can simultaneously use applications like Netflix and Zoom.
         </p>
-        <p>
+        <p id="bw_summary" class="collapse">
 	  Your current bandwidth of 
 	    <span id=text_ookla_dl>100</span>/<span id=text_ookla_ul>20</span>&nbsp;Mbps (download/upload) is
 	    <span id=text_bw_interp>similar to other </span> households' in Chicago.
         It <span id=text_bw_fcc>exceeds</span> the federal standard for being "served" by broadband Internet,
 	    of 100 Mbps download and 20 Mbps upload.
 	    <span id=text_bw_stability>Your bandwidth is consistent</span> over time.
+          </p>
+        <p id="bw_empty" class="collapse">
+        Measurements of your Internet bandwidth will be collected here.
           </p>
 
 	  <p class=extras>
@@ -140,8 +143,8 @@
 	    </p>
 	  </div>
 
-	  <p class=extras>
-	    <span data-toggle="bw_plot" data-toggle-defer="plots" class="toggle-button toggle-button-deferred" id=bw_plot_tog>+ My bandwidth over time</span>
+	  <p id=bw_plot_tog class="extras collapse">
+	    <span data-toggle="bw_plot" data-toggle-defer="plots" class="toggle-button toggle-button-deferred">+ My bandwidth over time</span>
 	  </p>
 	  <div id=bw_plot class=learn_more></div>
 
@@ -257,9 +260,12 @@
 	    This is measured in milliseconds &mdash;
 	      thousandths of a second.
           </p>
-          <p>
+          <p id="latency_summary" class="collapse">
 	    Your network latency to Google is 
 	      <span id=text_latency_interp>similar to other</span> households' in Chicago.
+          </p>
+          <p id="latency_empty" class="collapse">
+        Measurements of your Internet latency will be collected here.
           </p>
 
 	  <p class=extras>
@@ -295,8 +301,8 @@
 	    </p>
 	  </div>
 
-	  <p class=extras>
-	    <span data-toggle="latency_plot" data-toggle-defer="plots" class="toggle-button toggle-button-deferred" id=latency_plot_tog>+ My latency over time</span>
+	  <p id=latency_plot_tog class="extras collapse">
+	    <span data-toggle="latency_plot" data-toggle-defer="plots" class="toggle-button toggle-button-deferred">+ My latency over time</span>
 	  </p>
 	  <div id=latency_plot class=learn_more></div>
 
